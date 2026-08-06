@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { normalizeGameCode } from "@/lib/gameCode";
-import { getRecentGames } from "@/lib/recentGames";
+import { getRecentGames, removeRecentGame } from "@/lib/recentGames";
 import { supabase } from "@/lib/supabase";
 import type { GameStatus } from "@/types/database";
 
@@ -64,6 +66,20 @@ export default function HomePage() {
     const normalized = normalizeGameCode(code);
     if (normalized.length < 4) return;
     router.push(`/game/${normalized}`);
+  }
+
+  async function deleteGame(e: React.MouseEvent, gameCode: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm("Dieses Spiel endgültig löschen?")) return;
+    const { error } = await supabase.from("games").delete().eq("code", gameCode);
+    if (error) {
+      console.error(error);
+      toast.error("Spiel konnte nicht gelöscht werden.");
+      return;
+    }
+    removeRecentGame(gameCode);
+    setRecentGames((prev) => prev.filter((g) => g.code !== gameCode));
   }
 
   return (
@@ -127,9 +143,9 @@ export default function HomePage() {
         ) : (
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="lg"
-            className="w-full border-white/15 text-base text-muted-foreground"
+            className="w-full text-base"
             onClick={() => setShowJoin(true)}
           >
             Spiel beitreten
@@ -152,10 +168,20 @@ export default function HomePage() {
                   <span className="truncate font-medium">
                     {game.name || game.code}
                   </span>
-                  <span
-                    className={`shrink-0 text-xs ${STATUS_CLASS[game.status]}`}
-                  >
-                    {STATUS_LABEL[game.status]}
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className={`text-xs ${STATUS_CLASS[game.status]}`}>
+                      {STATUS_LABEL[game.status]}
+                    </span>
+                    {game.status === "finished" && (
+                      <button
+                        type="button"
+                        onClick={(e) => deleteGame(e, game.code)}
+                        aria-label="Spiel löschen"
+                        className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-red-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </span>
                 </a>
               </li>

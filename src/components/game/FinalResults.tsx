@@ -138,7 +138,7 @@ export function FinalResults() {
   }, [players, rounds, roundDrinks, ruleViolations, minigameResults]);
 
   return (
-    <div className="w-full max-w-sm space-y-8 py-6">
+    <div className="w-full max-w-md space-y-8 py-6">
       <div className="text-center space-y-1">
         <div className="text-6xl">🏁</div>
         <h1 className="font-heading text-4xl font-bold bg-gradient-to-r from-orange-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">

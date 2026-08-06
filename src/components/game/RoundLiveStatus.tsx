@@ -16,7 +16,7 @@ export function RoundLiveStatus() {
   );
 
   return (
-    <div className="w-full max-w-sm space-y-2">
+    <div className="w-full max-w-md space-y-2">
       <p className="text-sm font-medium text-muted-foreground">
         {reportedIds.size} / {players.length} fertig
       </p>

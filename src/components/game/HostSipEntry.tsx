@@ -64,7 +64,7 @@ export function HostSipEntry({ round }: { round: Round }) {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+    <div className="w-full max-w-md space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
       <p className="text-sm font-medium text-muted-foreground">
         Schlucke pro Spieler eintragen (PAR {par})
       </p>

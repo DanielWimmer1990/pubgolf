@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { HostSipEntry } from "@/components/game/HostSipEntry";
 import { RoundLiveStatus } from "@/components/game/RoundLiveStatus";
 import { MinigameResultForm } from "@/components/game/MinigameResultForm";
+import { RuleViolationBox } from "@/components/game/RuleViolationBox";
 import { PenaltyAdjustmentBox } from "@/components/game/PenaltyAdjustmentBox";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
@@ -56,12 +57,13 @@ export function RoundActive() {
       {currentRound.minigame_name && (
         <MinigameResultForm round={currentRound} />
       )}
+      {isHost && <RuleViolationBox />}
       {isHost && <PenaltyAdjustmentBox round={currentRound} />}
 
       {isHost && (
         <Button
           size="lg"
-          className="w-full max-w-sm text-base"
+          className="w-full max-w-md text-base"
           onClick={endRound}
           disabled={ending}
         >

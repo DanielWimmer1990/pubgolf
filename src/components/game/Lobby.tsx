@@ -77,7 +77,7 @@ export function Lobby() {
         <p className="text-sm text-muted-foreground">Wartet in der Lobby</p>
       </div>
 
-      <div className="w-full max-w-sm space-y-2">
+      <div className="w-full max-w-md space-y-2">
         <p className="text-sm font-medium text-muted-foreground">
           Spieler ({players.length})
         </p>
@@ -145,7 +145,7 @@ export function Lobby() {
       <GameCodeBadge code={code} />
 
       {isHost ? (
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-md">
           <Button
             size="lg"
             className="w-full text-base"
@@ -164,7 +164,7 @@ export function Lobby() {
           Du bist dabei! Warte, bis der Host das Spiel startet…
         </p>
       ) : (
-        <div className="w-full max-w-sm space-y-3">
+        <div className="w-full max-w-md space-y-3">
           {showJoin ? (
             <JoinForm onDone={() => setShowJoin(false)} />
           ) : (

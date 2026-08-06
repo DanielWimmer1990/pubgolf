@@ -74,7 +74,7 @@ export function MinigameResultForm({ round }: { round: Round }) {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+    <div className="w-full max-w-md space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
       <div>
         <p className="font-heading font-semibold">
           🎲 {round.minigame_name}

@@ -56,8 +56,8 @@ export function ScoringTableEditor({
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        Abweichungen über diesen Bereich hinaus zählen wie der jeweils
-        äußerste Wert.
+        Abweichungen über diesen Bereich hinaus werden im gleichen Schritt
+        weitergerechnet (z.B. PAR 6 bei 1 Schluck ergibt weiterhin −10).
       </p>
     </div>
   );

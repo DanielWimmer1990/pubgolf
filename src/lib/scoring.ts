@@ -24,9 +24,26 @@ export function computePointsForSips(
   scoringTable: ScoringTable
 ): number {
   const diff = sips - par;
-  const clamped = Math.max(SCORING_DIFF_MIN, Math.min(SCORING_DIFF_MAX, diff));
-  const row = scoringTable.rows.find((r) => r.diff === clamped);
-  return row?.points ?? 0;
+  const rows = scoringTable.rows;
+
+  const exact = rows.find((r) => r.diff === diff);
+  if (exact) return exact.points;
+
+  // Beyond the edited range, keep extrapolating at the same rate as the
+  // last step in the table instead of capping at the outermost row.
+  if (diff > SCORING_DIFF_MAX) {
+    const edge = rows.find((r) => r.diff === SCORING_DIFF_MAX);
+    const prev = rows.find((r) => r.diff === SCORING_DIFF_MAX - 1);
+    const step = edge && prev ? edge.points - prev.points : 0;
+    return (edge?.points ?? 0) + step * (diff - SCORING_DIFF_MAX);
+  }
+  if (diff < SCORING_DIFF_MIN) {
+    const edge = rows.find((r) => r.diff === SCORING_DIFF_MIN);
+    const next = rows.find((r) => r.diff === SCORING_DIFF_MIN + 1);
+    const step = edge && next ? edge.points - next.points : 0;
+    return (edge?.points ?? 0) + step * (SCORING_DIFF_MIN - diff);
+  }
+  return 0;
 }
 
 export function diffLabel(diff: number): string {

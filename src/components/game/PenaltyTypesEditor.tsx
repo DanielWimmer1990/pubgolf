@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PenaltyType } from "@/types/database";
 
@@ -155,17 +154,15 @@ export function PenaltyTypesEditor({
           onChange={(e) => setNewPoints(Number(e.target.value))}
           className="w-20 text-center"
         />
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="icon"
           onClick={addRow}
           disabled={!newName.trim()}
-          className="shrink-0 border-primary/40"
           aria-label="Strafe hinzufügen"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/40 text-primary hover:bg-primary/10 disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
-        </Button>
+        </button>
       </div>
     </div>
   );

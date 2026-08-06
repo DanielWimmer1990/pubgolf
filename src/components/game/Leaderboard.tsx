@@ -10,7 +10,7 @@ export function Leaderboard({ compact = false }: { compact?: boolean }) {
   const { leaderboard } = useGame();
 
   return (
-    <div className="w-full max-w-sm space-y-2">
+    <div className="w-full max-w-md space-y-2">
       {!compact && (
         <p className="text-sm font-medium text-muted-foreground">
           Rangliste

@@ -103,6 +103,31 @@ export default function CreateGamePage() {
     }
     setCreating(true);
     try {
+      if (gameId && code) {
+        // Coming back from a later step — update the existing game/host
+        // player instead of creating a duplicate.
+        const { error: gameUpdateError } = await supabase
+          .from("games")
+          .update({ name: gameName.trim() || null })
+          .eq("id", gameId);
+        if (gameUpdateError) throw gameUpdateError;
+
+        const hostPlayer = players.find((p) => p.is_host);
+        if (hostPlayer) {
+          const { error: hostUpdateError } = await supabase
+            .from("players")
+            .update({
+              name: identity.name.trim(),
+              color: identity.color,
+              avatar_emoji: identity.avatarEmoji,
+            })
+            .eq("id", hostPlayer.id);
+          if (hostUpdateError) throw hostUpdateError;
+        }
+        setStep(2);
+        return;
+      }
+
       const newCode = await generateUniqueGameCode();
 
       const { data: game, error: gameError } = await supabase
@@ -180,31 +205,57 @@ export default function CreateGamePage() {
   async function handleSettingsSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!gameId || !code) return;
-    setSavingSettings(true);
-    const { error } = await supabase
-      .from("games")
-      .update({
-        scoring_table: settings.scoringTable,
-        default_drink: settings.defaultDrink.trim() || null,
-        penalty_types: settings.penaltyTypes,
-        show_final_presentation: settings.showFinalPresentation,
-        show_live_leaderboard: settings.showLiveLeaderboard,
-        hide_leaderboard_final_round: settings.hideLeaderboardFinalRound,
-      })
-      .eq("id", gameId);
-    setSavingSettings(false);
-    if (error) {
-      console.error(error);
-      toast.error("Einstellungen konnten nicht gespeichert werden.");
+    if (players.length < 2) {
+      toast.error("Mindestens 2 Spieler nötig, um zu starten.");
       return;
     }
-    router.push(`/game/${code}`);
+    setSavingSettings(true);
+    try {
+      const { error: settingsError } = await supabase
+        .from("games")
+        .update({
+          scoring_table: settings.scoringTable,
+          default_drink: settings.defaultDrink.trim() || null,
+          penalty_types: settings.penaltyTypes,
+          show_final_presentation: settings.showFinalPresentation,
+          show_live_leaderboard: settings.showLiveLeaderboard,
+          hide_leaderboard_final_round: settings.hideLeaderboardFinalRound,
+        })
+        .eq("id", gameId);
+      if (settingsError) throw settingsError;
+
+      const firstPlayer = players[0];
+      const { error: roundError } = await supabase.from("rounds").insert({
+        game_id: gameId,
+        round_number: 1,
+        active_player_id: firstPlayer.id,
+        status: "setup",
+      });
+      if (roundError) throw roundError;
+
+      const { error: startError } = await supabase
+        .from("games")
+        .update({
+          status: "in_progress",
+          current_round_number: 1,
+          started_at: new Date().toISOString(),
+        })
+        .eq("id", gameId);
+      if (startError) throw startError;
+
+      router.push(`/game/${code}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Spiel konnte nicht gestartet werden.");
+    } finally {
+      setSavingSettings(false);
+    }
   }
 
   if (step === 1) {
     return (
       <main className="flex flex-1 flex-col items-center px-6 py-10">
-        <form onSubmit={handleStep1Submit} className="w-full max-w-sm space-y-6">
+        <form onSubmit={handleStep1Submit} className="w-full max-w-md space-y-6">
           <div className="space-y-1 text-center">
             <h1 className="font-heading text-3xl font-bold">Neues Spiel</h1>
             <p className="text-sm text-muted-foreground">
@@ -241,16 +292,22 @@ export default function CreateGamePage() {
   if (step === 2) {
     return (
       <main className="flex flex-1 flex-col items-center px-6 py-10">
-        <div className="w-full max-w-sm space-y-6">
+        <div className="w-full max-w-md space-y-6">
           <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Zurück
+            </button>
             <h1 className="font-heading text-3xl font-bold">Spieler</h1>
             <p className="text-sm text-muted-foreground">
               Teile den Code, damit andere direkt beitreten — oder trag sie
               selbst ein.
             </p>
           </div>
-
-          {code && <GameCodeBadge code={code} />}
 
           <ul className="space-y-2">
             {players.map((player) => (
@@ -301,11 +358,13 @@ export default function CreateGamePage() {
                   onClick={addPlayer}
                   disabled={addingPlayer}
                 >
-                  {addingPlayer ? "Füge hinzu…" : "Zur Liste hinzufügen"}
+                  {addingPlayer ? "Füge hinzu…" : "Spieler hinzufügen"}
                 </Button>
               </div>
             )}
           </div>
+
+          {code && <GameCodeBadge code={code} />}
 
           <Button
             type="button"
@@ -322,7 +381,7 @@ export default function CreateGamePage() {
 
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-10">
-      <form onSubmit={handleSettingsSubmit} className="w-full max-w-sm space-y-6">
+      <form onSubmit={handleSettingsSubmit} className="w-full max-w-md space-y-6">
         <div className="space-y-1">
           <button
             type="button"
@@ -345,7 +404,7 @@ export default function CreateGamePage() {
           className="w-full text-base"
           disabled={savingSettings}
         >
-          {savingSettings ? "Speichere…" : "Fertig — zur Lobby"}
+          {savingSettings ? "Starte Spiel…" : "Spiel starten"}
         </Button>
       </form>
     </main>

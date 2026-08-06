@@ -75,7 +75,7 @@ export function RoundSummary() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-5">
+    <div className="w-full max-w-md space-y-5">
       <div className="text-center space-y-1">
         <h2 className="font-heading text-2xl font-bold">
           Runde {currentRound.round_number} beendet
