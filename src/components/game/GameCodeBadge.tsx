@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { toast } from "sonner";
+import { Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function GameCodeBadge({ code }: { code: string }) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -25,6 +27,23 @@ export function GameCodeBadge({ code }: { code: string }) {
     }
   }
 
+  async function share() {
+    const url = `${window.location.origin}/game/${code}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Pubgolf",
+          text: `Tritt meinem Pubgolf-Spiel bei! Code: ${code}`,
+          url,
+        });
+      } catch {
+        // user cancelled the share sheet — nothing to do
+      }
+    } else {
+      copyLink();
+    }
+  }
+
   return (
     <div className="flex flex-col items-center gap-3 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
       {qrDataUrl && (
@@ -40,9 +59,16 @@ export function GameCodeBadge({ code }: { code: string }) {
       >
         {code}
       </button>
-      <p className="text-xs text-muted-foreground">
-        Code oder QR mit der Gruppe teilen
-      </p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="gap-1.5 border-primary/40"
+        onClick={share}
+      >
+        <Share2 className="h-3.5 w-3.5" />
+        Einladung teilen
+      </Button>
     </div>
   );
 }

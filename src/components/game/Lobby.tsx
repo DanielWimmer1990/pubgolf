@@ -2,42 +2,26 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { ChevronDown, Pencil, SlidersHorizontal, UserPlus } from "lucide-react";
+import { ChevronDown, Pencil, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { GameCodeBadge } from "@/components/game/GameCodeBadge";
-import { ScoringTableEditor } from "@/components/game/ScoringTableEditor";
 import { JoinForm } from "@/components/game/JoinForm";
 import { HostAddPlayerForm } from "@/components/game/HostAddPlayerForm";
 import { EditPlayerDialog } from "@/components/game/EditPlayerDialog";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import type { Player, ScoringTable } from "@/types/database";
+import type { Player } from "@/types/database";
 
 export function Lobby() {
   const { code, game, players, isHost, myPlayer } = useGame();
-  const [scoringTable, setScoringTable] = useState<ScoringTable | null>(null);
-  const [showScoring, setShowScoring] = useState(false);
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [starting, setStarting] = useState(false);
-  const [savingScoring, setSavingScoring] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
   if (!game) return null;
-  const effectiveScoringTable = scoringTable ?? game.scoring_table;
-
-  async function saveScoringTable(next: ScoringTable) {
-    setScoringTable(next);
-    setSavingScoring(true);
-    const { error } = await supabase
-      .from("games")
-      .update({ scoring_table: next })
-      .eq("id", game!.id);
-    setSavingScoring(false);
-    if (error) toast.error("Punkte-Regeln konnten nicht gespeichert werden.");
-  }
 
   async function startGame() {
     if (players.length < 2) {
@@ -122,13 +106,9 @@ export function Lobby() {
             </li>
           ))}
         </ul>
-      </div>
 
-      <GameCodeBadge code={code} />
-
-      {isHost ? (
-        <div className="w-full max-w-sm space-y-4">
-          <div className="space-y-2">
+        {isHost && (
+          <div className="space-y-2 pt-1">
             <Button
               type="button"
               variant="outline"
@@ -150,36 +130,13 @@ export function Lobby() {
               <HostAddPlayerForm onDone={() => setShowAddPlayer(false)} />
             )}
           </div>
+        )}
+      </div>
 
-          <div className="space-y-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full justify-between border-primary/40 text-base"
-              onClick={() => setShowScoring((v) => !v)}
-            >
-              <span className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-primary" />
-                Punkte-Regeln anpassen
-              </span>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 text-muted-foreground transition-transform",
-                  showScoring && "rotate-180"
-                )}
-              />
-            </Button>
-            {showScoring && (
-              <ScoringTableEditor
-                value={effectiveScoringTable}
-                onChange={saveScoringTable}
-              />
-            )}
-            {savingScoring && (
-              <p className="text-xs text-muted-foreground">Speichere…</p>
-            )}
-          </div>
+      <GameCodeBadge code={code} />
 
+      {isHost ? (
+        <div className="w-full max-w-sm">
           <Button
             size="lg"
             className="w-full text-base"
