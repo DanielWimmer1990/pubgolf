@@ -8,7 +8,7 @@ import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 
 export function RoundSummary() {
-  const { game, currentRound, players, roundDrinks, myPlayer } = useGame();
+  const { game, currentRound, players, roundDrinks, isHost } = useGame();
   const [advancing, setAdvancing] = useState(false);
 
   if (!game || !currentRound) return null;
@@ -22,7 +22,7 @@ export function RoundSummary() {
     }))
     .sort((a, b) => (b.drink?.points ?? 0) - (a.drink?.points ?? 0));
 
-  const canAdvance = myPlayer?.id === currentRound.active_player_id;
+  const canAdvance = isHost;
 
   async function nextRound() {
     setAdvancing(true);
@@ -56,7 +56,7 @@ export function RoundSummary() {
   return (
     <div className="w-full max-w-sm space-y-5">
       <div className="text-center space-y-1">
-        <h2 className="text-xl font-bold">
+        <h2 className="font-heading text-2xl font-bold">
           Runde {currentRound.round_number} beendet
         </h2>
         {currentRound.bar_name && (
@@ -70,7 +70,7 @@ export function RoundSummary() {
         {results.map(({ player, drink }) => (
           <li
             key={player.id}
-            className="flex items-center gap-3 rounded-lg border px-3 py-2"
+            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-xl"
           >
             <PlayerAvatar
               name={player.name}

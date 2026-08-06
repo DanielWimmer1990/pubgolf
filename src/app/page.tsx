@@ -67,17 +67,25 @@ export default function HomePage() {
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-10 px-6 py-16">
-      <div className="text-center space-y-3">
-        <div className="text-6xl">⛳🍺</div>
-        <h1 className="text-4xl font-bold tracking-tight">Pubgolf</h1>
-        <p className="text-muted-foreground max-w-xs mx-auto">
+      <div className="text-center space-y-4">
+        <div className="text-7xl drop-shadow-[0_0_30px_rgba(251,122,30,0.5)]">
+          ⛳🍺
+        </div>
+        <h1 className="font-heading text-6xl font-bold tracking-tight bg-gradient-to-r from-orange-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
+          Pubgolf
+        </h1>
+        <p className="text-muted-foreground max-w-xs mx-auto text-base">
           Von Bar zu Bar, PAR für PAR. Würfeln, trinken, Regeln brechen,
           gewinnen.
         </p>
       </div>
 
       <div className="w-full max-w-xs space-y-4">
-        <Button asChild size="lg" className="w-full text-base">
+        <Button
+          asChild
+          size="lg"
+          className="w-full text-base font-semibold shadow-[0_0_30px_-6px] shadow-primary"
+        >
           <a href="/create">Neues Spiel starten</a>
         </Button>
 
@@ -86,7 +94,7 @@ export default function HomePage() {
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="Spielcode eingeben"
-            className="text-center text-lg tracking-widest uppercase"
+            className="h-12 text-center text-lg tracking-widest uppercase"
             maxLength={8}
             autoCapitalize="characters"
           />
@@ -112,7 +120,7 @@ export default function HomePage() {
               <li key={game.code}>
                 <a
                   href={`/game/${game.code}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 hover:bg-accent"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-xl hover:bg-white/10"
                 >
                   <span className="truncate font-medium">
                     {game.name || game.code}

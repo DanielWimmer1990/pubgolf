@@ -18,7 +18,7 @@ import { useGame } from "@/hooks/useGame";
 import type { Rule } from "@/types/database";
 
 export function RulesList() {
-  const { rules, players } = useGame();
+  const { rules, players, isHost } = useGame();
   const [reportingRule, setReportingRule] = useState<Rule | null>(null);
 
   function playerName(id: string) {
@@ -38,8 +38,10 @@ export function RulesList() {
           <DrawerHeader>
             <DrawerTitle>Aktive Regeln</DrawerTitle>
             <DrawerDescription>
-              Gilt für den Rest des Spiels. Jeder darf jederzeit einen
-              Regelbruch melden.
+              Gilt für den Rest des Spiels.{" "}
+              {isHost
+                ? "Du kannst jederzeit einen Regelbruch melden."
+                : "Nur der Gastgeber kann Regelbrüche melden."}
             </DrawerDescription>
           </DrawerHeader>
 
@@ -62,13 +64,15 @@ export function RulesList() {
                     {rule.violation_points} Punkte bei Bruch
                   </p>
                 </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setReportingRule(rule)}
-                >
-                  Melden
-                </Button>
+                {isHost && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setReportingRule(rule)}
+                  >
+                    Melden
+                  </Button>
+                )}
               </div>
             ))}
           </div>

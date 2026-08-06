@@ -21,8 +21,8 @@ export function Leaderboard({ compact = false }: { compact?: boolean }) {
           <li
             key={player.id}
             className={cn(
-              "flex items-center gap-3 rounded-lg border px-3 py-2",
-              index === 0 && "border-amber-500/50 bg-amber-500/5"
+              "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-xl",
+              index === 0 && "border-amber-400/50 bg-amber-400/10"
             )}
           >
             <span className="w-6 text-center text-sm text-muted-foreground">

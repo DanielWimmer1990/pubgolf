@@ -6,14 +6,18 @@ import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { GameCodeBadge } from "@/components/game/GameCodeBadge";
 import { ScoringTableEditor } from "@/components/game/ScoringTableEditor";
+import { JoinForm } from "@/components/game/JoinForm";
+import { HostAddPlayerForm } from "@/components/game/HostAddPlayerForm";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import type { ScoringTable } from "@/types/database";
 
 export function Lobby() {
-  const { code, game, players, isHost } = useGame();
+  const { code, game, players, isHost, myPlayer } = useGame();
   const [scoringTable, setScoringTable] = useState<ScoringTable | null>(null);
   const [showScoring, setShowScoring] = useState(false);
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
   const [starting, setStarting] = useState(false);
   const [savingScoring, setSavingScoring] = useState(false);
 
@@ -70,7 +74,9 @@ export function Lobby() {
   return (
     <main className="flex flex-1 flex-col items-center gap-8 px-6 py-10">
       <div className="text-center space-y-1">
-        <h1 className="text-2xl font-bold">{game.name || "Pubgolf-Spiel"}</h1>
+        <h1 className="font-heading text-3xl font-bold">
+          {game.name || "Pubgolf-Spiel"}
+        </h1>
         <p className="text-sm text-muted-foreground">Wartet in der Lobby</p>
       </div>
 
@@ -84,7 +90,7 @@ export function Lobby() {
           {players.map((player) => (
             <li
               key={player.id}
-              className="flex items-center gap-3 rounded-lg border px-3 py-2"
+              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-xl"
             >
               <PlayerAvatar
                 name={player.name}
@@ -94,7 +100,7 @@ export function Lobby() {
               />
               <span className="font-medium">{player.name}</span>
               {player.is_host && (
-                <span className="ml-auto text-xs text-muted-foreground">
+                <span className="ml-auto text-xs font-medium text-primary">
                   Host
                 </span>
               )}
@@ -105,6 +111,21 @@ export function Lobby() {
 
       {isHost ? (
         <div className="w-full max-w-sm space-y-4">
+          <div className="space-y-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="px-0 text-muted-foreground"
+              onClick={() => setShowAddPlayer((v) => !v)}
+            >
+              {showAddPlayer ? "Formular ausblenden" : "+ Spieler hinzufügen"}
+            </Button>
+            {showAddPlayer && (
+              <HostAddPlayerForm onDone={() => setShowAddPlayer(false)} />
+            )}
+          </div>
+
           <div className="space-y-2">
             <Button
               type="button"
@@ -141,10 +162,30 @@ export function Lobby() {
               : "Spiel starten"}
           </Button>
         </div>
-      ) : (
+      ) : myPlayer ? (
         <p className="text-sm text-muted-foreground">
-          Warte, bis der Host das Spiel startet…
+          Du bist dabei! Warte, bis der Host das Spiel startet…
         </p>
+      ) : (
+        <div className="w-full max-w-sm space-y-3">
+          {showJoin ? (
+            <JoinForm onDone={() => setShowJoin(false)} />
+          ) : (
+            <>
+              <Button
+                size="lg"
+                className="w-full text-base"
+                onClick={() => setShowJoin(true)}
+              >
+                Ich spiele mit
+              </Button>
+              <p className="text-center text-sm text-muted-foreground">
+                oder einfach zuschauen — der Host startet, sobald alle da
+                sind
+              </p>
+            </>
+          )}
+        </div>
       )}
     </main>
   );

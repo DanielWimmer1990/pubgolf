@@ -7,20 +7,16 @@ import {
   PlayerIdentityForm,
   type PlayerIdentity,
 } from "@/components/game/PlayerIdentityForm";
+import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { getOrCreateDeviceToken, savePlayerId } from "@/lib/deviceIdentity";
 import { PLAYER_COLORS } from "@/lib/playerColors";
-import type { Game, Player } from "@/types/database";
 
-export function JoinForm({
-  code,
-  game,
-  players,
-}: {
-  code: string;
-  game: Game;
-  players: Player[];
-}) {
+/** Self-registration form: lets a visitor add themselves to the player
+ * roster. Joining never grants any game controls — only the host can
+ * operate the game once it starts. */
+export function JoinForm({ onDone }: { onDone?: () => void }) {
+  const { code, game, players } = useGame();
   const [identity, setIdentity] = useState<PlayerIdentity>({
     name: "",
     color:
@@ -32,6 +28,7 @@ export function JoinForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!game) return;
     if (!identity.name.trim()) {
       toast.error("Bitte gib deinen Namen ein.");
       return;
@@ -56,8 +53,7 @@ export function JoinForm({
 
       if (error || !player) throw error;
       savePlayerId(code, player.id);
-      // GameProvider's realtime subscription (or its own state) will pick up
-      // the new player row and re-render into the game view automatically.
+      onDone?.();
     } catch (err) {
       console.error(err);
       toast.error("Beitreten hat nicht geklappt. Versuch's nochmal.");
@@ -66,30 +62,16 @@ export function JoinForm({
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center px-6 py-10">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6">
-        <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-bold">
-            {game.name || "Pubgolf-Spiel"} beitreten
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {players.length}{" "}
-            {players.length === 1 ? "Spieler ist" : "Spieler sind"} schon
-            dabei.
-          </p>
-        </div>
-
-        <PlayerIdentityForm value={identity} onChange={setIdentity} />
-
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full text-base"
-          disabled={submitting}
-        >
-          {submitting ? "Trete bei…" : "Beitreten"}
-        </Button>
-      </form>
-    </main>
+    <form onSubmit={handleSubmit} className="w-full space-y-6">
+      <PlayerIdentityForm value={identity} onChange={setIdentity} />
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full text-base"
+        disabled={submitting}
+      >
+        {submitting ? "Trete bei…" : "Beitreten"}
+      </Button>
+    </form>
   );
 }

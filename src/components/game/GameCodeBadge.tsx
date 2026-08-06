@@ -26,19 +26,17 @@ export function GameCodeBadge({ code }: { code: string }) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border p-4">
+    <div className="flex flex-col items-center gap-3 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
       {qrDataUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={qrDataUrl}
-          alt="QR-Code zum Spiel"
-          className="h-40 w-40"
-        />
+        <div className="rounded-2xl bg-white p-2 shadow-[0_0_30px_-8px] shadow-primary">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qrDataUrl} alt="QR-Code zum Spiel" className="h-36 w-36" />
+        </div>
       )}
       <button
         type="button"
         onClick={copyLink}
-        className="text-3xl font-bold tracking-[0.3em] text-center"
+        className="font-heading text-4xl font-bold tracking-[0.25em] text-center bg-gradient-to-r from-orange-400 to-pink-400 bg-clip-text text-transparent"
       >
         {code}
       </button>

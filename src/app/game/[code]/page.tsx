@@ -1,7 +1,6 @@
 "use client";
 
 import { useGame } from "@/hooks/useGame";
-import { JoinForm } from "@/components/game/JoinForm";
 import { Lobby } from "@/components/game/Lobby";
 import { GameHeader } from "@/components/game/GameHeader";
 import { RoundSetup } from "@/components/game/RoundSetup";
@@ -12,16 +11,8 @@ import { FinalResults } from "@/components/game/FinalResults";
 import { Button } from "@/components/ui/button";
 
 export default function GamePage() {
-  const {
-    loading,
-    notFound,
-    loadError,
-    game,
-    players,
-    myPlayer,
-    currentRound,
-    isActivePlayer,
-  } = useGame();
+  const { loading, notFound, loadError, game, currentRound, isHost } =
+    useGame();
 
   if (loading) {
     return (
@@ -56,10 +47,6 @@ export default function GamePage() {
     );
   }
 
-  if (!myPlayer) {
-    return <JoinForm code={game.code} game={game} players={players} />;
-  }
-
   if (game.status === "lobby") {
     return <Lobby />;
   }
@@ -77,9 +64,11 @@ export default function GamePage() {
       <GameHeader />
       <main className="flex flex-1 flex-col items-center px-6 py-8">
         {!currentRound ? (
-          <p className="text-muted-foreground">Nächste Runde wird vorbereitet…</p>
+          <p className="text-muted-foreground">
+            Nächste Runde wird vorbereitet…
+          </p>
         ) : currentRound.status === "setup" ? (
-          isActivePlayer ? (
+          isHost ? (
             <RoundSetup />
           ) : (
             <RoundWaiting />

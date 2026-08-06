@@ -30,7 +30,7 @@ export function ScoringTableEditor({
         </p>
       </div>
 
-      <div className="rounded-lg border divide-y">
+      <div className="rounded-3xl border border-white/10 bg-white/5 divide-y divide-white/10 backdrop-blur-xl">
         {value.rows.map((row) => (
           <div
             key={row.diff}

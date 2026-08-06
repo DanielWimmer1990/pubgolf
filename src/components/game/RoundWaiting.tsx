@@ -14,13 +14,15 @@ export function RoundWaiting() {
         color={activePlayer.color}
         avatarEmoji={activePlayer.avatar_emoji}
         size="lg"
-        className="animate-pulse"
+        className="animate-pulse shadow-[0_0_40px_-8px] shadow-primary"
       />
       <div>
-        <p className="text-lg font-medium">{activePlayer.name} ist dran</p>
+        <p className="font-heading text-xl font-semibold">
+          {activePlayer.name} ist dran
+        </p>
         <p className="text-sm text-muted-foreground">
-          Wählt gerade die Bar, würfelt das PAR und legt die Regel für Runde{" "}
-          {currentRound.round_number} fest…
+          Der Gastgeber wählt gerade Bar, PAR und Regel für Runde{" "}
+          {currentRound.round_number}…
         </p>
       </div>
     </div>

@@ -31,9 +31,9 @@ export function GameHeader() {
   }
 
   return (
-    <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
+    <header className="sticky top-0 z-40 flex items-center justify-between gap-2 border-b border-white/10 bg-background/70 px-4 py-3 backdrop-blur-xl">
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold leading-none">
+        <p className="truncate font-heading text-sm font-semibold leading-none">
           {game.name || "Pubgolf"}
         </p>
         {currentRound && (

@@ -12,7 +12,7 @@ import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 
 export function RoundSetup() {
-  const { currentRound } = useGame();
+  const { currentRound, activePlayer } = useGame();
   const [barName, setBarName] = useState("");
   const [drinkDescription, setDrinkDescription] = useState("");
   const [par, setPar] = useState<number | null>(null);
@@ -68,9 +68,13 @@ export function RoundSetup() {
   return (
     <div className="w-full max-w-sm space-y-6">
       <div className="text-center space-y-1">
-        <h2 className="text-xl font-bold">Du bist dran!</h2>
+        <h2 className="font-heading text-2xl font-bold">
+          Runde {currentRound.round_number}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Runde {currentRound.round_number} — bereite alles vor
+          {activePlayer
+            ? `${activePlayer.name} ist an der Reihe — trag ein, was sie/er wählt`
+            : "Bereite die Runde vor"}
         </p>
       </div>
 
@@ -96,12 +100,12 @@ export function RoundSetup() {
         />
       </div>
 
-      <div className="flex flex-col items-center gap-2 rounded-xl border py-4">
+      <div className="flex flex-col items-center gap-2 rounded-3xl border border-white/10 bg-white/5 py-5 backdrop-blur-xl">
         <Label>PAR für diese Runde</Label>
         <DiceRoller value={par} onRoll={setPar} />
       </div>
 
-      <div className="space-y-2 rounded-xl border p-3">
+      <div className="space-y-2 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
         <Label htmlFor="rule-text">Neue Regel für den Rest des Spiels</Label>
         <Textarea
           id="rule-text"
@@ -124,7 +128,7 @@ export function RoundSetup() {
         </div>
       </div>
 
-      <div className="space-y-3 rounded-xl border p-3">
+      <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
         <div className="flex items-center justify-between">
           <Label htmlFor="minigame-toggle">Minispiel ausrufen</Label>
           <Switch

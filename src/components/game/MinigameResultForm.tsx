@@ -14,7 +14,7 @@ const OUTCOME_LABEL: Record<MinigameOutcome, string> = {
 };
 
 export function MinigameResultForm({ round }: { round: Round }) {
-  const { players, minigameResults, myPlayer } = useGame();
+  const { players, minigameResults, myPlayer, isHost } = useGame();
 
   if (!round.minigame_name) return null;
 
@@ -49,9 +49,11 @@ export function MinigameResultForm({ round }: { round: Round }) {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-3 rounded-xl border p-3">
+    <div className="w-full max-w-sm space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
       <div>
-        <p className="font-medium">🎲 {round.minigame_name}</p>
+        <p className="font-heading font-semibold">
+          🎲 {round.minigame_name}
+        </p>
         <p className="text-xs text-muted-foreground">
           Gewinner {round.minigame_points_winner! > 0 ? "+" : ""}
           {round.minigame_points_winner} · Verlierer{" "}
@@ -74,24 +76,30 @@ export function MinigameResultForm({ round }: { round: Round }) {
                 size="sm"
               />
               <span className="flex-1 truncate text-sm">{player.name}</span>
-              <div className="flex gap-1">
-                {(["winner", "loser", "neutral"] as MinigameOutcome[]).map(
-                  (outcome) => (
-                    <button
-                      key={outcome}
-                      type="button"
-                      onClick={() => setOutcome(player.id, outcome)}
-                      className={cn(
-                        "rounded-md border px-2 py-1 text-xs",
-                        current === outcome &&
-                          "border-foreground bg-accent font-medium"
-                      )}
-                    >
-                      {OUTCOME_LABEL[outcome]}
-                    </button>
-                  )
-                )}
-              </div>
+              {isHost ? (
+                <div className="flex gap-1">
+                  {(["winner", "loser", "neutral"] as MinigameOutcome[]).map(
+                    (outcome) => (
+                      <button
+                        key={outcome}
+                        type="button"
+                        onClick={() => setOutcome(player.id, outcome)}
+                        className={cn(
+                          "rounded-full border border-white/15 px-2.5 py-1 text-xs",
+                          current === outcome &&
+                            "border-primary bg-primary/20 font-medium text-primary"
+                        )}
+                      >
+                        {OUTCOME_LABEL[outcome]}
+                      </button>
+                    )
+                  )}
+                </div>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  {current ? OUTCOME_LABEL[current] : "–"}
+                </span>
+              )}
             </li>
           );
         })}

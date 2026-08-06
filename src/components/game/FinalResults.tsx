@@ -134,8 +134,10 @@ export function FinalResults() {
   return (
     <div className="w-full max-w-sm space-y-8 py-6">
       <div className="text-center space-y-1">
-        <div className="text-5xl">🏁</div>
-        <h1 className="text-2xl font-bold">Spiel beendet!</h1>
+        <div className="text-6xl">🏁</div>
+        <h1 className="font-heading text-4xl font-bold bg-gradient-to-r from-orange-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
+          Spiel beendet!
+        </h1>
         <p className="text-sm text-muted-foreground">Endstand</p>
       </div>
 
@@ -147,8 +149,8 @@ export function FinalResults() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: (leaderboard.length - index) * 0.08 }}
             className={cn(
-              "flex items-center gap-3 rounded-lg border px-3 py-2.5",
-              index === 0 && "border-amber-500/60 bg-amber-500/10"
+              "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-xl",
+              index === 0 && "border-amber-400/60 bg-amber-400/10"
             )}
           >
             <span className="w-7 text-center text-lg">
@@ -186,7 +188,7 @@ export function FinalResults() {
             {funAwards.map((award) => (
               <li
                 key={award.title}
-                className="flex items-center gap-3 rounded-lg border px-3 py-2"
+                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-xl"
               >
                 <span className="text-xl">{award.emoji}</span>
                 <div className="flex-1">
