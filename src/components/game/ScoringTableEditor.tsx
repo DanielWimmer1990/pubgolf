@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ScoringTable } from "@/types/database";
 import { diffLabel } from "@/lib/scoring";
+import { cn } from "@/lib/utils";
 
 type ScoringTableEditorProps = {
   value: ScoringTable;
@@ -25,8 +26,10 @@ export function ScoringTableEditor({
       <div className="space-y-1">
         <Label>Punkte-Regeln</Label>
         <p className="text-sm text-muted-foreground">
-          Punkte je nach Schlucken im Vergleich zum gewürfelten PAR. Frei
-          anpassbar, Standard: PAR − Schlucke + 1.
+          Genau das gewürfelte PAR getroffen? 0 Punkte. Wer mehr Schlucke
+          braucht als gewürfelt, bekommt <span className="text-emerald-400 font-medium">Pluspunkte</span> —
+          wer weniger braucht, <span className="text-red-400 font-medium">Minuspunkte</span>. Frei
+          anpassbar für jede Zeile.
         </p>
       </div>
 
@@ -43,7 +46,11 @@ export function ScoringTableEditor({
               onChange={(e) =>
                 updatePoints(row.diff, Number(e.target.value))
               }
-              className="w-20 text-center"
+              className={cn(
+                "w-20 text-center font-semibold",
+                row.points > 0 && "text-emerald-400",
+                row.points < 0 && "text-red-400"
+              )}
             />
           </div>
         ))}

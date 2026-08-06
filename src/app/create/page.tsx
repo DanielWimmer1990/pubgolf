@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,7 @@ import { generateUniqueGameCode } from "@/lib/gameCode";
 import { computeDefaultScoringTable } from "@/lib/scoring";
 import { getOrCreateDeviceToken, savePlayerId } from "@/lib/deviceIdentity";
 import { PLAYER_COLORS } from "@/lib/playerColors";
+import { cn } from "@/lib/utils";
 
 export default function CreateGamePage() {
   const router = useRouter();
@@ -106,12 +108,20 @@ export default function CreateGamePage() {
         <div className="space-y-2">
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="px-0 text-muted-foreground"
+            variant="outline"
+            className="w-full justify-between border-primary/40 text-base"
             onClick={() => setShowScoring((v) => !v)}
           >
-            {showScoring ? "Punkte-Regeln ausblenden" : "Punkte-Regeln anpassen"}
+            <span className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-primary" />
+              Punkte-Regeln anpassen
+            </span>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform",
+                showScoring && "rotate-180"
+              )}
+            />
           </Button>
           {showScoring && (
             <ScoringTableEditor

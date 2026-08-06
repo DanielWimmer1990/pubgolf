@@ -4,14 +4,15 @@ export const SCORING_DIFF_MIN = -3;
 export const SCORING_DIFF_MAX = 3;
 
 /**
- * Default table derived from the example that defines this game's house
- * rule: PAR 2 in 1 sip (diff -1) = +2 points, PAR 2 in 4 sips (diff +2) = -1
- * point. Both fit points = -diff + 1 exactly.
+ * Default table: exactly hitting PAR is worth 0. Going over PAR (more sips
+ * than rolled) earns plus points, going under PAR (fewer sips) costs minus
+ * points — 2 points per sip of difference. Symmetric and easy to explain
+ * out loud at a bar.
  */
 export function computeDefaultScoringTable(): ScoringTable {
   const rows = [];
   for (let diff = SCORING_DIFF_MIN; diff <= SCORING_DIFF_MAX; diff++) {
-    rows.push({ diff, points: -diff + 1 });
+    rows.push({ diff, points: 2 * diff });
   }
   return { rows };
 }

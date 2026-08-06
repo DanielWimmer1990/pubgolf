@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { ChevronDown, Pencil, SlidersHorizontal, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { GameCodeBadge } from "@/components/game/GameCodeBadge";
 import { ScoringTableEditor } from "@/components/game/ScoringTableEditor";
 import { JoinForm } from "@/components/game/JoinForm";
 import { HostAddPlayerForm } from "@/components/game/HostAddPlayerForm";
+import { EditPlayerDialog } from "@/components/game/EditPlayerDialog";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
-import type { ScoringTable } from "@/types/database";
+import { cn } from "@/lib/utils";
+import type { Player, ScoringTable } from "@/types/database";
 
 export function Lobby() {
   const { code, game, players, isHost, myPlayer } = useGame();
@@ -20,6 +23,7 @@ export function Lobby() {
   const [showJoin, setShowJoin] = useState(false);
   const [starting, setStarting] = useState(false);
   const [savingScoring, setSavingScoring] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
   if (!game) return null;
   const effectiveScoringTable = scoringTable ?? game.scoring_table;
@@ -80,8 +84,6 @@ export function Lobby() {
         <p className="text-sm text-muted-foreground">Wartet in der Lobby</p>
       </div>
 
-      <GameCodeBadge code={code} />
-
       <div className="w-full max-w-sm space-y-2">
         <p className="text-sm font-medium text-muted-foreground">
           Spieler ({players.length})
@@ -104,22 +106,45 @@ export function Lobby() {
                   Host
                 </span>
               )}
+              {isHost && (
+                <button
+                  type="button"
+                  onClick={() => setEditingPlayer(player)}
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground",
+                    !player.is_host && "ml-auto"
+                  )}
+                  aria-label={`${player.name} bearbeiten`}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
             </li>
           ))}
         </ul>
       </div>
+
+      <GameCodeBadge code={code} />
 
       {isHost ? (
         <div className="w-full max-w-sm space-y-4">
           <div className="space-y-2">
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="px-0 text-muted-foreground"
+              variant="outline"
+              className="w-full justify-between border-primary/40 text-base"
               onClick={() => setShowAddPlayer((v) => !v)}
             >
-              {showAddPlayer ? "Formular ausblenden" : "+ Spieler hinzufügen"}
+              <span className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4 text-primary" />
+                Spieler hinzufügen
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform",
+                  showAddPlayer && "rotate-180"
+                )}
+              />
             </Button>
             {showAddPlayer && (
               <HostAddPlayerForm onDone={() => setShowAddPlayer(false)} />
@@ -129,14 +154,20 @@ export function Lobby() {
           <div className="space-y-2">
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="px-0 text-muted-foreground"
+              variant="outline"
+              className="w-full justify-between border-primary/40 text-base"
               onClick={() => setShowScoring((v) => !v)}
             >
-              {showScoring
-                ? "Punkte-Regeln ausblenden"
-                : "Punkte-Regeln anpassen"}
+              <span className="flex items-center gap-2">
+                <SlidersHorizontal className="h-4 w-4 text-primary" />
+                Punkte-Regeln anpassen
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform",
+                  showScoring && "rotate-180"
+                )}
+              />
             </Button>
             {showScoring && (
               <ScoringTableEditor
@@ -187,6 +218,11 @@ export function Lobby() {
           )}
         </div>
       )}
+
+      <EditPlayerDialog
+        player={editingPlayer}
+        onClose={() => setEditingPlayer(null)}
+      />
     </main>
   );
 }
