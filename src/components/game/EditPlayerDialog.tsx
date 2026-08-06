@@ -14,7 +14,9 @@ import {
   PlayerIdentityForm,
   type PlayerIdentity,
 } from "@/components/game/PlayerIdentityForm";
+import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
+import { findIdentityConflict } from "@/lib/playerValidation";
 import type { Player } from "@/types/database";
 
 function EditPlayerForm({
@@ -24,6 +26,7 @@ function EditPlayerForm({
   player: Player;
   onClose: () => void;
 }) {
+  const { players } = useGame();
   const [identity, setIdentity] = useState<PlayerIdentity>({
     name: player.name,
     color: player.color,
@@ -35,6 +38,11 @@ function EditPlayerForm({
   async function save() {
     if (!identity.name.trim()) {
       toast.error("Bitte einen Namen eingeben.");
+      return;
+    }
+    const conflict = findIdentityConflict(identity, players, player.id);
+    if (conflict) {
+      toast.error(conflict);
       return;
     }
     setSaving(true);

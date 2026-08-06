@@ -29,7 +29,7 @@ export function HostSipEntry({ round }: { round: Round }) {
   if (!game) return null;
 
   function setSips(playerId: string, value: number) {
-    setSipsByPlayer((prev) => ({ ...prev, [playerId]: Math.max(0, value) }));
+    setSipsByPlayer((prev) => ({ ...prev, [playerId]: Math.max(1, value) }));
   }
 
   function bump(playerId: string, delta: number) {

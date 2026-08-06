@@ -1,18 +1,99 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
+import { Leaderboard } from "@/components/game/Leaderboard";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
+type Highlight = { emoji: string; text: string };
+
 export function RoundSummary() {
-  const { game, currentRound, players, roundDrinks, isHost } = useGame();
+  const {
+    game,
+    currentRound,
+    players,
+    roundDrinks,
+    pointAdjustments,
+    minigameResults,
+    isHost,
+  } = useGame();
   const [advancing, setAdvancing] = useState(false);
   const [ending, setEnding] = useState(false);
   const [pickingBonusPlayer, setPickingBonusPlayer] = useState(false);
+  const [reopening, setReopening] = useState(false);
+
+  const highlights = useMemo<Highlight[]>(() => {
+    if (!currentRound) return [];
+    const playerById = new Map(players.map((p) => [p.id, p]));
+    const items: Highlight[] = [];
+
+    const scored = roundDrinks.filter(
+      (rd) => rd.round_id === currentRound.id && rd.points != null
+    );
+    if (scored.length > 0) {
+      const best = scored.reduce((a, b) =>
+        (b.points ?? 0) > (a.points ?? 0) ? b : a
+      );
+      const worst = scored.reduce((a, b) =>
+        (b.points ?? 0) < (a.points ?? 0) ? b : a
+      );
+      const bestPlayer = playerById.get(best.player_id);
+      if (bestPlayer) {
+        items.push({
+          emoji: "🏆",
+          text: `${bestPlayer.name} mit dem heftigsten Schluck (${
+            (best.points ?? 0) > 0 ? "+" : ""
+          }${best.points})`,
+        });
+      }
+      if (worst.player_id !== best.player_id) {
+        const worstPlayer = playerById.get(worst.player_id);
+        if (worstPlayer) {
+          items.push({
+            emoji: "🐌",
+            text: `${worstPlayer.name} am sparsamsten (${
+              (worst.points ?? 0) > 0 ? "+" : ""
+            }${worst.points})`,
+          });
+        }
+      }
+    }
+
+    for (const pa of pointAdjustments.filter(
+      (p) => p.round_id === currentRound.id
+    )) {
+      const player = playerById.get(pa.player_id);
+      if (!player) continue;
+      items.push({
+        emoji: "⚠️",
+        text: `${player.name}: ${pa.label} (${pa.points > 0 ? "+" : ""}${
+          pa.points
+        })`,
+      });
+    }
+
+    const winner = minigameResults.find(
+      (mr) => mr.round_id === currentRound.id && mr.outcome === "winner"
+    );
+    if (winner) {
+      const player = playerById.get(winner.player_id);
+      if (player) {
+        items.push({
+          emoji: "🎮",
+          text: `${player.name} gewinnt${
+            currentRound.minigame_name ? ` "${currentRound.minigame_name}"` : ""
+          }`,
+        });
+      }
+    }
+
+    return items;
+  }, [currentRound, players, roundDrinks, pointAdjustments, minigameResults]);
 
   if (!game || !currentRound) return null;
 
@@ -26,6 +107,10 @@ export function RoundSummary() {
     .sort((a, b) => (b.drink?.points ?? 0) - (a.drink?.points ?? 0));
 
   const isLastBaseRound = currentRound.round_number >= players.length;
+  const canSeeLeaderboard =
+    isHost ||
+    (game.show_live_leaderboard &&
+      !(game.hide_leaderboard_final_round && currentRound.is_final_round));
 
   async function nextRound(activePlayerId: string) {
     setAdvancing(true);
@@ -60,6 +145,20 @@ export function RoundSummary() {
     nextRound(nextPlayer.id);
   }
 
+  async function reopenRound() {
+    if (!currentRound) return;
+    setReopening(true);
+    const { error } = await supabase
+      .from("rounds")
+      .update({ status: "active" })
+      .eq("id", currentRound.id);
+    if (error) {
+      console.error(error);
+      toast.error("Runde konnte nicht wieder geöffnet werden.");
+      setReopening(false);
+    }
+  }
+
   async function endGame() {
     if (!window.confirm("Spiel beenden und Endergebnis zeigen?")) return;
     setEnding(true);
@@ -76,6 +175,17 @@ export function RoundSummary() {
 
   return (
     <div className="w-full max-w-md space-y-5">
+      {isHost && (
+        <button
+          type="button"
+          onClick={reopenRound}
+          disabled={reopening}
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {reopening ? "Öffne…" : "Zurück zur Runde"}
+        </button>
+      )}
       <div className="text-center space-y-1">
         <h2 className="font-heading text-2xl font-bold">
           Runde {currentRound.round_number} beendet
@@ -87,6 +197,37 @@ export function RoundSummary() {
         )}
       </div>
 
+      {canSeeLeaderboard && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">
+            Zwischentabelle
+          </p>
+          <Leaderboard compact />
+        </div>
+      )}
+
+      {highlights.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">
+            Highlights der Runde
+          </p>
+          <ul className="space-y-1.5">
+            {highlights.map((h, i) => (
+              <li
+                key={i}
+                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm"
+              >
+                <span className="text-base">{h.emoji}</span>
+                <span>{h.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <p className="text-sm font-medium text-muted-foreground">
+        Diese Runde
+      </p>
       <ul className="space-y-2">
         {results.map(({ player, drink }) => (
           <li

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Dices, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -37,6 +38,11 @@ export function RoundSetup() {
   if (!currentRound || !game) return null;
 
   const canStart = !!par && barName.trim().length > 0 && ruleText.trim().length > 0;
+  const missingForStart = [
+    !par && "PAR würfeln",
+    barName.trim().length === 0 && "Bar eintragen",
+    ruleText.trim().length === 0 && "Regel eintragen",
+  ].filter((v): v is string => !!v);
   const previousRound = rounds.find(
     (r) => r.round_number === currentRound.round_number - 1
   );
@@ -135,6 +141,12 @@ export function RoundSetup() {
         <div className="text-center space-y-1">
           <h2 className="font-heading text-2xl font-bold">
             Runde {currentRound.round_number}
+            {activePlayer && (
+              <span className="text-muted-foreground font-normal">
+                {" "}
+                · {activePlayer.name}&apos;s Bar
+              </span>
+            )}
           </h2>
           <p className="text-sm text-muted-foreground">
             {activePlayer
@@ -187,11 +199,10 @@ export function RoundSetup() {
           <Label htmlFor="rule-points" className="text-sm text-muted-foreground">
             Punkte bei Regelbruch
           </Label>
-          <Input
+          <NumberInput
             id="rule-points"
-            type="number"
             value={rulePoints}
-            onChange={(e) => setRulePoints(Number(e.target.value))}
+            onChange={setRulePoints}
             className="w-20 text-center"
           />
         </div>
@@ -222,24 +233,18 @@ export function RoundSetup() {
                 <Label className="text-xs text-muted-foreground">
                   Punkte Gewinner
                 </Label>
-                <Input
-                  type="number"
+                <NumberInput
                   value={minigamePointsWinner}
-                  onChange={(e) =>
-                    setMinigamePointsWinner(Number(e.target.value))
-                  }
+                  onChange={setMinigamePointsWinner}
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">
                   Punkte Verlierer
                 </Label>
-                <Input
-                  type="number"
+                <NumberInput
                   value={minigamePointsLoser}
-                  onChange={(e) =>
-                    setMinigamePointsLoser(Number(e.target.value))
-                  }
+                  onChange={setMinigamePointsLoser}
                 />
               </div>
             </div>
@@ -255,6 +260,11 @@ export function RoundSetup() {
       >
         {submitting ? "Starte Runde…" : "Runde starten"}
       </Button>
+      {!canStart && (
+        <p className="text-center text-xs text-muted-foreground">
+          Es fehlt noch: {missingForStart.join(", ")}
+        </p>
+      )}
     </div>
   );
 }

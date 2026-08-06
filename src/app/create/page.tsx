@@ -22,6 +22,7 @@ import { generateUniqueGameCode } from "@/lib/gameCode";
 import { computeDefaultScoringTable } from "@/lib/scoring";
 import { getOrCreateDeviceToken, savePlayerId } from "@/lib/deviceIdentity";
 import { PLAYER_COLORS } from "@/lib/playerColors";
+import { findIdentityConflict } from "@/lib/playerValidation";
 import { cn } from "@/lib/utils";
 import type { Player } from "@/types/database";
 
@@ -106,6 +107,17 @@ export default function CreateGamePage() {
       if (gameId && code) {
         // Coming back from a later step — update the existing game/host
         // player instead of creating a duplicate.
+        const hostConflict = findIdentityConflict(
+          identity,
+          players,
+          players.find((p) => p.is_host)?.id
+        );
+        if (hostConflict) {
+          toast.error(hostConflict);
+          setCreating(false);
+          return;
+        }
+
         const { error: gameUpdateError } = await supabase
           .from("games")
           .update({ name: gameName.trim() || null })
@@ -176,6 +188,11 @@ export default function CreateGamePage() {
   async function addPlayer() {
     if (!gameId || !newPlayer.name.trim()) {
       toast.error("Bitte einen Namen eingeben.");
+      return;
+    }
+    const conflict = findIdentityConflict(newPlayer, players);
+    if (conflict) {
+      toast.error(conflict);
       return;
     }
     setAddingPlayer(true);

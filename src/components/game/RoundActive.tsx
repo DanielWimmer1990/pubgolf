@@ -57,7 +57,7 @@ export function RoundActive() {
       {currentRound.minigame_name && (
         <MinigameResultForm round={currentRound} />
       )}
-      {isHost && <RuleViolationBox />}
+      {isHost && <RuleViolationBox round={currentRound} />}
       {isHost && <PenaltyAdjustmentBox round={currentRound} />}
 
       {isHost && (

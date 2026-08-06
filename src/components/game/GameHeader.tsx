@@ -38,7 +38,7 @@ export function GameHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between gap-2 border-b border-white/10 bg-background/70 px-4 py-3 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-x-2 gap-y-2 border-b border-white/10 bg-background/70 px-4 py-3 backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-2">
         <Link
           href="/"
@@ -52,7 +52,7 @@ export function GameHeader() {
             {game.name || "Pubgolf"}
           </p>
           {currentRound && (
-            <p className="text-xs text-muted-foreground">
+            <p className="truncate text-xs text-muted-foreground">
               Runde {currentRound.round_number}
             </p>
           )}

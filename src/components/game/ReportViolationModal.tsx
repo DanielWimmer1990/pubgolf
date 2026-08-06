@@ -23,7 +23,7 @@ export function ReportViolationModal({
   rule: Rule | null;
   onClose: () => void;
 }) {
-  const { players, myPlayer } = useGame();
+  const { players, myPlayer, currentRound } = useGame();
   const [violatorId, setViolatorId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,6 +33,7 @@ export function ReportViolationModal({
     const { error } = await supabase.from("rule_violations").insert({
       game_id: rule.game_id,
       rule_id: rule.id,
+      round_id: currentRound?.id ?? null,
       violator_player_id: violatorId,
       reported_by_player_id: myPlayer.id,
       points_applied: rule.violation_points,

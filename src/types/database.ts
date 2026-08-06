@@ -92,6 +92,7 @@ export type RuleViolation = {
   created_at: string;
   game_id: string;
   rule_id: string;
+  round_id: string | null;
   violator_player_id: string;
   reported_by_player_id: string;
   points_applied: number;

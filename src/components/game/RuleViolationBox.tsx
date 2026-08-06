@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import type { Round } from "@/types/database";
 
 type PendingEntry = {
   id: string;
@@ -17,15 +18,19 @@ type PendingEntry = {
   points: number;
 };
 
-export function RuleViolationBox() {
+export function RuleViolationBox({ round }: { round: Round }) {
   const { rules, ruleViolations, players, myPlayer } = useGame();
   const [pending, setPending] = useState<PendingEntry[]>([]);
   const [saving, setSaving] = useState(false);
 
   if (rules.length === 0) return null;
 
+  const savedForRound = ruleViolations.filter(
+    (rv) => rv.round_id === round.id
+  );
+
   function countFor(ruleId: string, playerId: string) {
-    const saved = ruleViolations.filter(
+    const saved = savedForRound.filter(
       (rv) => rv.rule_id === ruleId && rv.violator_player_id === playerId
     ).length;
     const queued = pending.filter(
@@ -56,8 +61,9 @@ export function RuleViolationBox() {
     setSaving(true);
     const { error } = await supabase.from("rule_violations").insert(
       pending.map((p) => ({
-        game_id: rules.find((r) => r.id === p.ruleId)!.game_id,
+        game_id: round.game_id,
         rule_id: p.ruleId,
+        round_id: round.id,
         violator_player_id: p.playerId,
         reported_by_player_id: myPlayer.id,
         points_applied: p.points,

@@ -11,6 +11,7 @@ import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { getOrCreateDeviceToken, savePlayerId } from "@/lib/deviceIdentity";
 import { PLAYER_COLORS } from "@/lib/playerColors";
+import { findIdentityConflict } from "@/lib/playerValidation";
 
 /** Self-registration form: lets a visitor add themselves to the player
  * roster. Joining never grants any game controls — only the host can
@@ -31,6 +32,11 @@ export function JoinForm({ onDone }: { onDone?: () => void }) {
     if (!game) return;
     if (!identity.name.trim()) {
       toast.error("Bitte gib deinen Namen ein.");
+      return;
+    }
+    const conflict = findIdentityConflict(identity, players);
+    if (conflict) {
+      toast.error(conflict);
       return;
     }
 

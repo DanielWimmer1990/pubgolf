@@ -10,6 +10,7 @@ import {
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { PLAYER_COLORS } from "@/lib/playerColors";
+import { findIdentityConflict } from "@/lib/playerValidation";
 
 /** Host-typed roster entry: adds a player who isn't registering themselves
  * (e.g. no phone in hand). They never get their own device identity for
@@ -30,6 +31,11 @@ export function HostAddPlayerForm({ onDone }: { onDone?: () => void }) {
     if (!game) return;
     if (!identity.name.trim()) {
       toast.error("Bitte einen Namen eingeben.");
+      return;
+    }
+    const conflict = findIdentityConflict(identity, players);
+    if (conflict) {
+      toast.error(conflict);
       return;
     }
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { PenaltyType } from "@/types/database";
@@ -119,12 +120,9 @@ export function PenaltyTypesEditor({
               onChange={(e) => updateRow(penalty.id, { name: e.target.value })}
               className="flex-1"
             />
-            <Input
-              type="number"
+            <NumberInput
               value={penalty.points}
-              onChange={(e) =>
-                updateRow(penalty.id, { points: Number(e.target.value) })
-              }
+              onChange={(v) => updateRow(penalty.id, { points: v })}
               className="w-20 text-center"
             />
             <button
@@ -148,10 +146,9 @@ export function PenaltyTypesEditor({
           className="flex-1"
           maxLength={40}
         />
-        <Input
-          type="number"
+        <NumberInput
           value={newPoints}
-          onChange={(e) => setNewPoints(Number(e.target.value))}
+          onChange={setNewPoints}
           className="w-20 text-center"
         />
         <button

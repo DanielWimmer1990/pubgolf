@@ -1,4 +1,4 @@
-import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import type { ScoringTable } from "@/types/database";
 import { diffLabel } from "@/lib/scoring";
@@ -40,12 +40,9 @@ export function ScoringTableEditor({
             className="flex items-center justify-between gap-3 px-3 py-2"
           >
             <span className="text-sm">{diffLabel(row.diff)}</span>
-            <Input
-              type="number"
+            <NumberInput
               value={row.points}
-              onChange={(e) =>
-                updatePoints(row.diff, Number(e.target.value))
-              }
+              onChange={(v) => updatePoints(row.diff, v)}
               className={cn(
                 "w-20 text-center font-semibold",
                 row.points > 0 && "text-emerald-400",

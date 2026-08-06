@@ -72,7 +72,7 @@ create table round_drinks (
   round_id      uuid not null references rounds(id) on delete cascade,
   game_id       uuid not null references games(id) on delete cascade,
   player_id     uuid not null references players(id) on delete cascade,
-  sips          integer check (sips >= 0),
+  sips          integer check (sips >= 1),
   points        integer,
   reported_at   timestamptz,
   unique (round_id, player_id)
@@ -90,11 +90,16 @@ create table rules (
 );
 
 -- ── RULE_VIOLATIONS (reportable at any time by anyone) ───────────────────────
+-- round_id is nullable: violations can in principle be reported outside any
+-- round, but is populated whenever reported during a round so the per-round
+-- UI can show only that round's freshly-logged violations (older ones still
+-- count toward the overall leaderboard regardless of round_id).
 create table rule_violations (
   id                      uuid default uuid_generate_v4() primary key,
   created_at              timestamptz default now(),
   game_id                 uuid not null references games(id) on delete cascade,
   rule_id                 uuid not null references rules(id) on delete cascade,
+  round_id                uuid references rounds(id) on delete set null,
   violator_player_id      uuid not null references players(id) on delete cascade,
   reported_by_player_id   uuid not null references players(id),
   points_applied          integer not null
