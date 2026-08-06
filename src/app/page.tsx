@@ -74,9 +74,14 @@ export default function HomePage() {
         <h1 className="font-heading text-6xl font-bold tracking-tight bg-gradient-to-r from-orange-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
           Pubgolf
         </h1>
-        <p className="text-muted-foreground max-w-xs mx-auto text-base">
-          Von Bar zu Bar, PAR für PAR. Würfeln, trinken, Regeln brechen,
-          gewinnen.
+        <p className="font-heading text-lg font-semibold tracking-wide text-primary">
+          Schlag für Schlag. Schluck für Schluck.
+        </p>
+        <p className="text-muted-foreground max-w-sm mx-auto text-base leading-relaxed">
+          Ihr zieht als Gruppe von Bar zu Bar. Jede Runde ein neues PAR,
+          dazu Extra-Regeln und Spontan-Duelle — bis eine Live-Rangliste
+          zeigt, wer die Nacht gewinnt. Der Gastgeber hält die Fäden in der
+          Hand, alle anderen fiebern live mit.
         </p>
       </div>
 
