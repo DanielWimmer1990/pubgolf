@@ -6,16 +6,24 @@ create extension if not exists "uuid-ossp";
 
 -- ── GAMES ──────────────────────────────────────────────────────────────────
 create table games (
-  id                    uuid default uuid_generate_v4() primary key,
-  created_at            timestamptz default now(),
-  code                  text not null unique,
-  name                  text,
-  status                text not null default 'lobby'
-                          check (status in ('lobby', 'in_progress', 'finished')),
-  scoring_table         jsonb not null,
-  current_round_number  integer not null default 0,
-  started_at            timestamptz,
-  finished_at           timestamptz
+  id                                uuid default uuid_generate_v4() primary key,
+  created_at                        timestamptz default now(),
+  code                              text not null unique,
+  name                              text,
+  status                            text not null default 'lobby'
+                                      check (status in ('lobby', 'in_progress', 'finished')),
+  scoring_table                     jsonb not null,
+  current_round_number              integer not null default 0,
+  started_at                        timestamptz,
+  finished_at                       timestamptz,
+  header_image_url                  text,
+  default_drink                     text,
+  default_rule_points               integer not null default -2,
+  default_minigame_points_winner    integer not null default 1,
+  default_minigame_points_loser     integer not null default -1,
+  show_final_presentation           boolean not null default true,
+  show_live_leaderboard             boolean not null default true,
+  hide_leaderboard_final_round      boolean not null default false
 );
 
 -- ── PLAYERS ────────────────────────────────────────────────────────────────
@@ -47,6 +55,7 @@ create table rounds (
   minigame_name           text,
   minigame_points_winner  integer,
   minigame_points_loser   integer,
+  is_final_round          boolean not null default false,
   unique (game_id, round_number)
 );
 
@@ -192,3 +201,19 @@ create policy "round_drinks_all" on round_drinks for all to anon, authenticated 
 create policy "rules_all" on rules for all to anon, authenticated using (true) with check (true);
 create policy "rule_violations_all" on rule_violations for all to anon, authenticated using (true) with check (true);
 create policy "minigame_results_all" on minigame_results for all to anon, authenticated using (true) with check (true);
+
+-- ── STORAGE (header images) ──────────────────────────────────────────────
+-- Public bucket for optional per-game header/logo images. Same permissive
+-- posture as the tables above — anyone with the anon key can upload, which
+-- is acceptable for a casual party game with no sensitive data.
+insert into storage.buckets (id, name, public)
+values ('game-headers', 'game-headers', true)
+on conflict (id) do nothing;
+
+drop policy if exists "game_headers_public_read" on storage.objects;
+create policy "game_headers_public_read" on storage.objects
+  for select to anon, authenticated using (bucket_id = 'game-headers');
+
+drop policy if exists "game_headers_public_insert" on storage.objects;
+create policy "game_headers_public_insert" on storage.objects
+  for insert to anon, authenticated with check (bucket_id = 'game-headers');

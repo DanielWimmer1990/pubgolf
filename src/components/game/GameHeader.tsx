@@ -14,6 +14,11 @@ export function GameHeader() {
 
   if (!game) return null;
 
+  const canSeeLeaderboard =
+    isHost ||
+    (game.show_live_leaderboard &&
+      !(game.hide_leaderboard_final_round && currentRound?.is_final_round));
+
   async function endGame() {
     if (!window.confirm("Spiel wirklich beenden und Endergebnis zeigen?")) {
       return;
@@ -43,7 +48,7 @@ export function GameHeader() {
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <LeaderboardDrawer />
+        {canSeeLeaderboard && <LeaderboardDrawer />}
         <RulesList />
         {isHost && (
           <Button

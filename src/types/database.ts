@@ -21,6 +21,14 @@ export type Game = {
   current_round_number: number;
   started_at: string | null;
   finished_at: string | null;
+  header_image_url: string | null;
+  default_drink: string | null;
+  default_rule_points: number;
+  default_minigame_points_winner: number;
+  default_minigame_points_loser: number;
+  show_final_presentation: boolean;
+  show_live_leaderboard: boolean;
+  hide_leaderboard_final_round: boolean;
 };
 
 export type Player = {
@@ -48,6 +56,7 @@ export type Round = {
   minigame_name: string | null;
   minigame_points_winner: number | null;
   minigame_points_loser: number | null;
+  is_final_round: boolean;
 };
 
 export type RoundDrink = {

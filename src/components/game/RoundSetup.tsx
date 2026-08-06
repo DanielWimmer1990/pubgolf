@@ -12,19 +12,28 @@ import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 
 export function RoundSetup() {
-  const { currentRound, activePlayer } = useGame();
+  const { game, currentRound, activePlayer } = useGame();
   const [barName, setBarName] = useState("");
-  const [drinkDescription, setDrinkDescription] = useState("");
+  const [drinkDescription, setDrinkDescription] = useState(
+    () => game?.default_drink ?? ""
+  );
   const [par, setPar] = useState<number | null>(null);
   const [ruleText, setRuleText] = useState("");
-  const [rulePoints, setRulePoints] = useState(-2);
+  const [rulePoints, setRulePoints] = useState(
+    () => game?.default_rule_points ?? -2
+  );
   const [minigameEnabled, setMinigameEnabled] = useState(false);
   const [minigameName, setMinigameName] = useState("");
-  const [minigamePointsWinner, setMinigamePointsWinner] = useState(1);
-  const [minigamePointsLoser, setMinigamePointsLoser] = useState(-1);
+  const [minigamePointsWinner, setMinigamePointsWinner] = useState(
+    () => game?.default_minigame_points_winner ?? 1
+  );
+  const [minigamePointsLoser, setMinigamePointsLoser] = useState(
+    () => game?.default_minigame_points_loser ?? -1
+  );
+  const [isFinalRound, setIsFinalRound] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  if (!currentRound) return null;
+  if (!currentRound || !game) return null;
 
   const canStart = !!par && barName.trim().length > 0 && ruleText.trim().length > 0;
 
@@ -55,6 +64,7 @@ export function RoundSetup() {
           minigame_name: minigameEnabled ? minigameName.trim() || null : null,
           minigame_points_winner: minigameEnabled ? minigamePointsWinner : null,
           minigame_points_loser: minigameEnabled ? minigamePointsLoser : null,
+          is_final_round: isFinalRound,
         })
         .eq("id", currentRound.id);
       if (roundError) throw roundError;
@@ -174,6 +184,22 @@ export function RoundSetup() {
           </div>
         )}
       </div>
+
+      {game.hide_leaderboard_final_round && (
+        <div className="flex items-center justify-between gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+          <div>
+            <Label htmlFor="final-round-toggle">Letzte Runde</Label>
+            <p className="text-xs text-muted-foreground">
+              Versteckt die Rangliste ab jetzt bis zum Endergebnis.
+            </p>
+          </div>
+          <Switch
+            id="final-round-toggle"
+            checked={isFinalRound}
+            onCheckedChange={setIsFinalRound}
+          />
+        </div>
+      )}
 
       <Button
         size="lg"
