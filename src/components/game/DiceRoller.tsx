@@ -7,9 +7,8 @@ import { cn } from "@/lib/utils";
 const SIZE = 84; // px, cube edge length
 const HALF = SIZE / 2;
 
-// Opposite faces sum to 7, like a real die. Each entry is the rotation
-// (relative to the cube's resting orientation) needed to bring that face
-// to point at the camera.
+// Opposite faces sum to 7, like a real die. Each entry is the canonical
+// rotation (mod 360) that brings that face to point at the camera.
 const FACE_TARGET_ROTATION: Record<number, { x: number; y: number }> = {
   1: { x: 0, y: 0 },
   6: { x: 0, y: 180 },
@@ -62,9 +61,20 @@ const PIP_LAYOUTS: Record<number, [number, number][]> = {
   ],
 };
 
+// Shortest forward (non-negative) distance from `from` to an angle
+// congruent with `to`, so rotation only ever accumulates and never has to
+// snap backwards (which read as a jarring second "roll").
+function forwardDelta(from: number, to: number): number {
+  const diff = ((to - from) % 360 + 360) % 360;
+  return diff;
+}
+
 function DieFace({ value }: { value: number }) {
   return (
-    <div className="grid h-full w-full grid-cols-3 grid-rows-3 gap-1 rounded-xl border border-white/25 bg-gradient-to-br from-orange-400 to-pink-500 p-2.5 shadow-[inset_0_2px_6px_rgba(255,255,255,0.4),inset_0_-4px_10px_rgba(0,0,0,0.25)]">
+    <div
+      className="grid h-full w-full grid-cols-3 grid-rows-3 gap-1 rounded-xl border border-white/25 bg-gradient-to-br from-orange-400 to-pink-500 p-2.5 shadow-[inset_0_2px_6px_rgba(255,255,255,0.4),inset_0_-4px_10px_rgba(0,0,0,0.25)]"
+      style={{ backfaceVisibility: "hidden" }}
+    >
       {Array.from({ length: 9 }).map((_, i) => {
         const row = Math.floor(i / 3);
         const col = i % 3;
@@ -99,19 +109,18 @@ export function DiceRoller({
     if (rolling || disabled) return;
     const final = 1 + Math.floor(Math.random() * 6);
     const target = FACE_TARGET_ROTATION[final];
-    const spins = 2 + Math.floor(Math.random() * 2);
+    const spins = 3 + Math.floor(Math.random() * 2);
 
     setRolling(true);
-    setRotation({
-      rotateX: target.x + 360 * spins,
-      rotateY: target.y + 360 * spins * (Math.random() < 0.5 ? 1 : -1),
-    });
+    setRotation((prev) => ({
+      rotateX: prev.rotateX + forwardDelta(prev.rotateX, target.x) + 360 * spins,
+      rotateY: prev.rotateY + forwardDelta(prev.rotateY, target.y) + 360 * spins,
+    }));
 
     window.setTimeout(() => {
       setRolling(false);
-      setRotation({ rotateX: target.x, rotateY: target.y });
       onRoll(final);
-    }, 1100);
+    }, 2000);
   }
 
   return (
@@ -122,7 +131,7 @@ export function DiceRoller({
         disabled={disabled}
         aria-label="Würfeln"
         className={cn(
-          "relative",
+          "relative outline-none [-webkit-tap-highlight-color:transparent] focus:outline-none focus-visible:outline-none",
           !disabled && "cursor-pointer",
           disabled && "opacity-60"
         )}
@@ -136,7 +145,7 @@ export function DiceRoller({
             transformStyle: "preserve-3d",
             transform: `rotateX(${rotation.rotateX}deg) rotateY(${rotation.rotateY}deg)`,
             transition: rolling
-              ? "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)"
+              ? "transform 2s cubic-bezier(0.16, 0.85, 0.24, 1)"
               : "transform 0.4s ease-out",
           }}
         >
@@ -144,7 +153,10 @@ export function DiceRoller({
             <div
               key={face}
               className="absolute inset-0"
-              style={{ transform: FACE_STATIC_TRANSFORM[face] }}
+              style={{
+                transform: FACE_STATIC_TRANSFORM[face],
+                backfaceVisibility: "hidden",
+              }}
             >
               <DieFace value={face} />
             </div>

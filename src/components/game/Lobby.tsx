@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
-import { ChevronDown, Pencil, UserPlus } from "lucide-react";
+import { ChevronDown, Home, Pencil, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { GameCodeBadge } from "@/components/game/GameCodeBadge";
@@ -61,6 +62,14 @@ export function Lobby() {
 
   return (
     <main className="flex flex-1 flex-col items-center gap-8 px-6 py-10">
+      <Link
+        href="/"
+        className="self-start flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <Home className="h-3.5 w-3.5" />
+        Startseite
+      </Link>
+
       {game.header_image_url && (
         <div className="w-full max-w-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}

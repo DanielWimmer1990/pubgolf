@@ -1,13 +1,33 @@
 "use client";
 
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { HostSipEntry } from "@/components/game/HostSipEntry";
 import { RoundLiveStatus } from "@/components/game/RoundLiveStatus";
 import { MinigameResultForm } from "@/components/game/MinigameResultForm";
+import { PenaltyAdjustmentBox } from "@/components/game/PenaltyAdjustmentBox";
 import { useGame } from "@/hooks/useGame";
+import { supabase } from "@/lib/supabase";
 
 export function RoundActive() {
   const { currentRound, isHost } = useGame();
+  const [ending, setEnding] = useState(false);
   if (!currentRound) return null;
+
+  async function endRound() {
+    if (!currentRound) return;
+    setEnding(true);
+    const { error } = await supabase
+      .from("rounds")
+      .update({ status: "done" })
+      .eq("id", currentRound.id);
+    setEnding(false);
+    if (error) {
+      console.error(error);
+      toast.error("Runde konnte nicht beendet werden.");
+    }
+  }
 
   return (
     <div className="flex w-full flex-col items-center gap-8">
@@ -35,6 +55,18 @@ export function RoundActive() {
       <RoundLiveStatus />
       {currentRound.minigame_name && (
         <MinigameResultForm round={currentRound} />
+      )}
+      {isHost && <PenaltyAdjustmentBox round={currentRound} />}
+
+      {isHost && (
+        <Button
+          size="lg"
+          className="w-full max-w-sm text-base"
+          onClick={endRound}
+          disabled={ending}
+        >
+          {ending ? "Beende…" : "Runde beenden"}
+        </Button>
       )}
     </div>
   );

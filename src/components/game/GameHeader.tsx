@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
+import { Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RulesList } from "@/components/game/RulesList";
 import { LeaderboardDrawer } from "@/components/game/LeaderboardDrawer";
@@ -37,15 +39,24 @@ export function GameHeader() {
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between gap-2 border-b border-white/10 bg-background/70 px-4 py-3 backdrop-blur-xl">
-      <div className="min-w-0">
-        <p className="truncate font-heading text-sm font-semibold leading-none">
-          {game.name || "Pubgolf"}
-        </p>
-        {currentRound && (
-          <p className="text-xs text-muted-foreground">
-            Runde {currentRound.round_number}
+      <div className="flex min-w-0 items-center gap-2">
+        <Link
+          href="/"
+          aria-label="Zur Startseite"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground"
+        >
+          <Home className="h-4 w-4" />
+        </Link>
+        <div className="min-w-0">
+          <p className="truncate font-heading text-sm font-semibold leading-none">
+            {game.name || "Pubgolf"}
           </p>
-        )}
+          {currentRound && (
+            <p className="text-xs text-muted-foreground">
+              Runde {currentRound.round_number}
+            </p>
+          )}
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {canSeeLeaderboard && <LeaderboardDrawer />}

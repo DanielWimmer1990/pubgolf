@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
 export function RoundSummary() {
   const { game, currentRound, players, roundDrinks, isHost } = useGame();
   const [advancing, setAdvancing] = useState(false);
+  const [ending, setEnding] = useState(false);
+  const [pickingBonusPlayer, setPickingBonusPlayer] = useState(false);
 
   if (!game || !currentRound) return null;
 
@@ -22,21 +25,17 @@ export function RoundSummary() {
     }))
     .sort((a, b) => (b.drink?.points ?? 0) - (a.drink?.points ?? 0));
 
-  const canAdvance = isHost;
+  const isLastBaseRound = currentRound.round_number >= players.length;
 
-  async function nextRound() {
+  async function nextRound(activePlayerId: string) {
     setAdvancing(true);
     try {
-      const currentIndex = players.findIndex(
-        (p) => p.id === currentRound!.active_player_id
-      );
-      const nextPlayer = players[(currentIndex + 1) % players.length];
       const nextRoundNumber = currentRound!.round_number + 1;
 
       const { error: roundError } = await supabase.from("rounds").insert({
         game_id: game!.id,
         round_number: nextRoundNumber,
-        active_player_id: nextPlayer.id,
+        active_player_id: activePlayerId,
         status: "setup",
       });
       if (roundError) throw roundError;
@@ -50,6 +49,28 @@ export function RoundSummary() {
       console.error(err);
       toast.error("Nächste Runde konnte nicht gestartet werden.");
       setAdvancing(false);
+    }
+  }
+
+  function autoNextRound() {
+    const currentIndex = players.findIndex(
+      (p) => p.id === currentRound!.active_player_id
+    );
+    const nextPlayer = players[(currentIndex + 1) % players.length];
+    nextRound(nextPlayer.id);
+  }
+
+  async function endGame() {
+    if (!window.confirm("Spiel beenden und Endergebnis zeigen?")) return;
+    setEnding(true);
+    const { error } = await supabase
+      .from("games")
+      .update({ status: "finished", finished_at: new Date().toISOString() })
+      .eq("id", game!.id);
+    if (error) {
+      console.error(error);
+      toast.error("Spiel konnte nicht beendet werden.");
+      setEnding(false);
     }
   }
 
@@ -100,19 +121,85 @@ export function RoundSummary() {
         ))}
       </ul>
 
-      {canAdvance ? (
+      {!isHost && (
+        <p className="text-center text-sm text-muted-foreground">
+          Warte, bis die nächste Runde eröffnet wird…
+        </p>
+      )}
+
+      {isHost && !isLastBaseRound && (
         <Button
           size="lg"
           className="w-full text-base"
-          onClick={nextRound}
+          onClick={autoNextRound}
           disabled={advancing}
         >
           {advancing ? "Starte…" : "Nächste Runde"}
         </Button>
-      ) : (
-        <p className="text-center text-sm text-muted-foreground">
-          Warte, bis die nächste Runde eröffnet wird…
-        </p>
+      )}
+
+      {isHost && isLastBaseRound && !pickingBonusPlayer && (
+        <div className="space-y-2">
+          <p className="text-center text-sm text-muted-foreground">
+            Jeder war einmal dran — das Spiel könnte hier enden.
+          </p>
+          <Button
+            size="lg"
+            className="w-full text-base"
+            onClick={endGame}
+            disabled={ending}
+          >
+            {ending ? "Beende…" : "Spiel beenden"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-primary/40 text-base"
+            onClick={() => setPickingBonusPlayer(true)}
+            disabled={advancing}
+          >
+            Weitere Runde spielen
+          </Button>
+        </div>
+      )}
+
+      {isHost && isLastBaseRound && pickingBonusPlayer && (
+        <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+          <p className="text-sm font-medium text-muted-foreground">
+            Wem gehört die nächste Runde?
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {players.map((player) => (
+              <button
+                key={player.id}
+                type="button"
+                onClick={() => nextRound(player.id)}
+                disabled={advancing}
+                className={cn(
+                  "flex flex-col items-center gap-1 rounded-lg border border-white/10 p-2 text-xs hover:border-primary/50"
+                )}
+              >
+                <PlayerAvatar
+                  name={player.name}
+                  color={player.color}
+                  avatarEmoji={player.avatar_emoji}
+                  size="sm"
+                />
+                <span className="truncate max-w-full">{player.name}</span>
+              </button>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full text-muted-foreground"
+            onClick={() => setPickingBonusPlayer(false)}
+            disabled={advancing}
+          >
+            Abbrechen
+          </Button>
+        </div>
       )}
     </div>
   );

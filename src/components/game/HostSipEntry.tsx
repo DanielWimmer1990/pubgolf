@@ -43,13 +43,13 @@ export function HostSipEntry({ round }: { round: Round }) {
     const { error } = await supabase
       .from("round_drinks")
       .upsert(rows, { onConflict: "round_id,player_id" });
+    setSubmitting(false);
     if (error) {
       console.error(error);
       toast.error("Schlucke konnten nicht gespeichert werden.");
-      setSubmitting(false);
       return;
     }
-    toast.success("Runde abgeschlossen!");
+    toast.success("Schlucke gespeichert!");
   }
 
   return (
@@ -117,7 +117,7 @@ export function HostSipEntry({ round }: { round: Round }) {
         onClick={submitAll}
         disabled={submitting}
       >
-        {submitting ? "Speichere…" : "Runde abschließen"}
+        {submitting ? "Speichere…" : "Speichern"}
       </Button>
     </div>
   );

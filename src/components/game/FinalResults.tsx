@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import Link from "next/link";
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
+import { Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { useGame } from "@/hooks/useGame";
 import { cn } from "@/lib/utils";
@@ -250,6 +253,13 @@ export function FinalResults() {
           </ul>
         </div>
       )}
+
+      <Button asChild size="lg" className="w-full text-base gap-2">
+        <Link href="/">
+          <Home className="h-4 w-4" />
+          Zur Startseite
+        </Link>
+      </Button>
     </div>
   );
 }

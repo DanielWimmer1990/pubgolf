@@ -23,7 +23,12 @@ create table games (
   default_minigame_points_loser     integer not null default -1,
   show_final_presentation           boolean not null default true,
   show_live_leaderboard             boolean not null default true,
-  hide_leaderboard_final_round      boolean not null default false
+  hide_leaderboard_final_round      boolean not null default false,
+  penalty_types                     jsonb not null default '[
+                                       {"id": "water_hazard", "name": "Water Hazard (Klogang)", "points": 10},
+                                       {"id": "spill", "name": "Getränk umschütten", "points": 5},
+                                       {"id": "vomit", "name": "Kotzen", "points": 20}
+                                     ]'::jsonb
 );
 
 -- ── PLAYERS ────────────────────────────────────────────────────────────────
@@ -108,6 +113,22 @@ create table minigame_results (
   unique (round_id, player_id)
 );
 
+-- ── POINT_ADJUSTMENTS (flexible, repeatable host-logged penalties) ──────────
+-- Free-form point deltas the host logs during a round (e.g. from a
+-- configured penalty_types preset like "Water Hazard", or any ad-hoc
+-- amount). Not tied to a specific declared rule, and repeatable per player
+-- within a round (multiple bathroom trips are allowed in golf, apparently).
+create table point_adjustments (
+  id                      uuid default uuid_generate_v4() primary key,
+  created_at              timestamptz default now(),
+  game_id                 uuid not null references games(id) on delete cascade,
+  round_id                uuid not null references rounds(id) on delete cascade,
+  player_id               uuid not null references players(id) on delete cascade,
+  label                   text not null,
+  points                  integer not null,
+  created_by_player_id    uuid not null references players(id)
+);
+
 -- ── SCORING TRIGGER ────────────────────────────────────────────────────────
 -- Computes round_drinks.points server-side from rounds.par and games.scoring_table,
 -- so points can't be tampered with client-side despite the permissive RLS below.
@@ -148,36 +169,13 @@ create trigger trg_round_drinks_points
 before insert or update of sips on round_drinks
 for each row execute function fn_calc_round_drink_points();
 
--- ── AUTO ROUND-COMPLETE TRIGGER ──────────────────────────────────────────────
--- Once every player in the game has reported sips for a round, flip it to 'done'
--- automatically, so no client has to "win the race" to advance shared state.
-create or replace function fn_maybe_complete_round()
-returns trigger as $$
-declare
-  v_game_id  uuid;
-  v_total    integer;
-  v_reported integer;
-begin
-  select game_id into v_game_id from rounds where id = new.round_id;
-  select count(*) into v_total from players where game_id = v_game_id;
-  select count(*) into v_reported from round_drinks
-    where round_id = new.round_id and sips is not null;
-
-  if v_total > 0 and v_reported >= v_total then
-    update rounds set status = 'done' where id = new.round_id and status = 'active';
-  end if;
-
-  return new;
-end;
-$$ language plpgsql;
-
-create trigger trg_round_drinks_complete
-after insert or update of sips on round_drinks
-for each row execute function fn_maybe_complete_round();
+-- Note: rounds used to auto-complete once every player had sips recorded.
+-- Now the host explicitly ends a round (minigame + penalty entries can be
+-- added after sips too), so that trigger was removed — see migration 004.
 
 -- ── REALTIME ──────────────────────────────────────────────────────────────
 alter publication supabase_realtime add table
-  games, players, rounds, round_drinks, rules, rule_violations, minigame_results;
+  games, players, rounds, round_drinks, rules, rule_violations, minigame_results, point_adjustments;
 
 -- ── ROW LEVEL SECURITY ────────────────────────────────────────────────────
 -- Deliberately permissive: there is no auth session to scope policies by
@@ -193,6 +191,7 @@ alter table round_drinks enable row level security;
 alter table rules enable row level security;
 alter table rule_violations enable row level security;
 alter table minigame_results enable row level security;
+alter table point_adjustments enable row level security;
 
 create policy "games_all" on games for all to anon, authenticated using (true) with check (true);
 create policy "players_all" on players for all to anon, authenticated using (true) with check (true);
@@ -201,6 +200,7 @@ create policy "round_drinks_all" on round_drinks for all to anon, authenticated 
 create policy "rules_all" on rules for all to anon, authenticated using (true) with check (true);
 create policy "rule_violations_all" on rule_violations for all to anon, authenticated using (true) with check (true);
 create policy "minigame_results_all" on minigame_results for all to anon, authenticated using (true) with check (true);
+create policy "point_adjustments_all" on point_adjustments for all to anon, authenticated using (true) with check (true);
 
 -- ── STORAGE (header images) ──────────────────────────────────────────────
 -- Public bucket for optional per-game header/logo images. Same permissive

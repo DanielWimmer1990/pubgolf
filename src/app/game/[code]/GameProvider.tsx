@@ -19,6 +19,7 @@ import type {
   Rule,
   RuleViolation,
   MinigameResult,
+  PointAdjustment,
 } from "@/types/database";
 
 type TableName =
@@ -28,7 +29,8 @@ type TableName =
   | "round_drinks"
   | "rules"
   | "rule_violations"
-  | "minigame_results";
+  | "minigame_results"
+  | "point_adjustments";
 
 type State = {
   loading: boolean;
@@ -41,6 +43,7 @@ type State = {
   rules: Rule[];
   ruleViolations: RuleViolation[];
   minigameResults: MinigameResult[];
+  pointAdjustments: PointAdjustment[];
 };
 
 type Action =
@@ -61,6 +64,7 @@ const TABLE_TO_STATE_KEY: Record<TableName, keyof State> = {
   rules: "rules",
   rule_violations: "ruleViolations",
   minigame_results: "minigameResults",
+  point_adjustments: "pointAdjustments",
 };
 
 function upsertInList<T extends { id: string }>(list: T[], row: T): T[] {
@@ -130,6 +134,7 @@ const initialState: State = {
   rules: [],
   ruleViolations: [],
   minigameResults: [],
+  pointAdjustments: [],
 };
 
 export type LeaderboardEntry = {
@@ -196,6 +201,7 @@ export function GameProvider({
         { data: rules },
         { data: ruleViolations },
         { data: minigameResults },
+        { data: pointAdjustments },
       ] = await Promise.all([
         supabase.from("players").select("*").eq("game_id", gameId),
         supabase.from("rounds").select("*").eq("game_id", gameId),
@@ -203,6 +209,7 @@ export function GameProvider({
         supabase.from("rules").select("*").eq("game_id", gameId),
         supabase.from("rule_violations").select("*").eq("game_id", gameId),
         supabase.from("minigame_results").select("*").eq("game_id", gameId),
+        supabase.from("point_adjustments").select("*").eq("game_id", gameId),
       ]);
 
       if (cancelled) return;
@@ -217,6 +224,7 @@ export function GameProvider({
           rules: (rules ?? []) as Rule[],
           ruleViolations: (ruleViolations ?? []) as RuleViolation[],
           minigameResults: (minigameResults ?? []) as MinigameResult[],
+          pointAdjustments: (pointAdjustments ?? []) as PointAdjustment[],
         },
       });
 
@@ -304,6 +312,16 @@ export function GameProvider({
           },
           handle("minigame_results")
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "point_adjustments",
+            filter: `game_id=eq.${gameId}`,
+          },
+          handle("point_adjustments")
+        )
         .subscribe();
     }
 
@@ -343,6 +361,9 @@ export function GameProvider({
         mr.player_id,
         (totals.get(mr.player_id) ?? 0) + mr.points_applied
       );
+    }
+    for (const pa of state.pointAdjustments) {
+      totals.set(pa.player_id, (totals.get(pa.player_id) ?? 0) + pa.points);
     }
     const leaderboard: LeaderboardEntry[] = players
       .map((player) => ({ player, total: totals.get(player.id) ?? 0 }))

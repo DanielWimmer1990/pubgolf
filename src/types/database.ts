@@ -11,6 +11,12 @@ export type ScoringTable = {
   rows: ScoringRow[];
 };
 
+export type PenaltyType = {
+  id: string;
+  name: string;
+  points: number;
+};
+
 export type Game = {
   id: string;
   created_at: string;
@@ -29,6 +35,7 @@ export type Game = {
   show_final_presentation: boolean;
   show_live_leaderboard: boolean;
   hide_leaderboard_final_round: boolean;
+  penalty_types: PenaltyType[];
 };
 
 export type Player = {
@@ -98,4 +105,15 @@ export type MinigameResult = {
   outcome: MinigameOutcome;
   points_applied: number;
   recorded_by_player_id: string;
+};
+
+export type PointAdjustment = {
+  id: string;
+  created_at: string;
+  game_id: string;
+  round_id: string;
+  player_id: string;
+  label: string;
+  points: number;
+  created_by_player_id: string;
 };

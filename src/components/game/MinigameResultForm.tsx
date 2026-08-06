@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
@@ -16,36 +18,59 @@ const OUTCOME_LABEL: Record<MinigameOutcome, string> = {
 export function MinigameResultForm({ round }: { round: Round }) {
   const { players, minigameResults, myPlayer, isHost } = useGame();
 
-  if (!round.minigame_name) return null;
-
   const resultsForRound = minigameResults.filter(
     (mr) => mr.round_id === round.id
   );
 
-  async function setOutcome(playerId: string, outcome: MinigameOutcome) {
-    if (!myPlayer) return;
-    const points =
-      outcome === "winner"
-        ? round.minigame_points_winner ?? 0
-        : outcome === "loser"
-        ? round.minigame_points_loser ?? 0
-        : 0;
+  const [outcomes, setOutcomes] = useState<Record<string, MinigameOutcome>>(
+    () =>
+      Object.fromEntries(
+        players.map((p) => [
+          p.id,
+          resultsForRound.find((mr) => mr.player_id === p.id)?.outcome ??
+            "neutral",
+        ])
+      )
+  );
+  const [saving, setSaving] = useState(false);
 
-    const { error } = await supabase.from("minigame_results").upsert(
-      {
+  if (!round.minigame_name) return null;
+
+  function setOutcome(playerId: string, outcome: MinigameOutcome) {
+    setOutcomes((prev) => ({ ...prev, [playerId]: outcome }));
+  }
+
+  async function save() {
+    if (!myPlayer) return;
+    setSaving(true);
+    const rows = players.map((p) => {
+      const outcome = outcomes[p.id] ?? "neutral";
+      const points =
+        outcome === "winner"
+          ? round.minigame_points_winner ?? 0
+          : outcome === "loser"
+          ? round.minigame_points_loser ?? 0
+          : 0;
+      return {
         game_id: round.game_id,
         round_id: round.id,
-        player_id: playerId,
+        player_id: p.id,
         outcome,
         points_applied: points,
         recorded_by_player_id: myPlayer.id,
-      },
-      { onConflict: "round_id,player_id" }
-    );
+      };
+    });
+
+    const { error } = await supabase
+      .from("minigame_results")
+      .upsert(rows, { onConflict: "round_id,player_id" });
+    setSaving(false);
     if (error) {
       console.error(error);
       toast.error("Ergebnis konnte nicht gespeichert werden.");
+      return;
     }
+    toast.success("Minispiel gespeichert!");
   }
 
   return (
@@ -64,9 +89,10 @@ export function MinigameResultForm({ round }: { round: Round }) {
 
       <ul className="space-y-2">
         {players.map((player) => {
-          const current = resultsForRound.find(
-            (mr) => mr.player_id === player.id
-          )?.outcome;
+          const current = isHost
+            ? outcomes[player.id] ?? "neutral"
+            : resultsForRound.find((mr) => mr.player_id === player.id)
+                ?.outcome;
           return (
             <li key={player.id} className="flex items-center gap-2">
               <PlayerAvatar
@@ -104,6 +130,16 @@ export function MinigameResultForm({ round }: { round: Round }) {
           );
         })}
       </ul>
+
+      {isHost && (
+        <Button
+          className="w-full"
+          onClick={save}
+          disabled={saving}
+        >
+          {saving ? "Speichere…" : "Speichern"}
+        </Button>
+      )}
     </div>
   );
 }

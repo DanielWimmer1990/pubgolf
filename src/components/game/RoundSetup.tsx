@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { ArrowLeft, Dices, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +13,7 @@ import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 
 export function RoundSetup() {
-  const { game, currentRound, activePlayer } = useGame();
+  const { game, currentRound, activePlayer, players, rounds } = useGame();
   const [barName, setBarName] = useState("");
   const [drinkDescription, setDrinkDescription] = useState(
     () => game?.default_drink ?? ""
@@ -30,12 +31,15 @@ export function RoundSetup() {
   const [minigamePointsLoser, setMinigamePointsLoser] = useState(
     () => game?.default_minigame_points_loser ?? -1
   );
-  const [isFinalRound, setIsFinalRound] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [goingBack, setGoingBack] = useState(false);
 
   if (!currentRound || !game) return null;
 
   const canStart = !!par && barName.trim().length > 0 && ruleText.trim().length > 0;
+  const previousRound = rounds.find(
+    (r) => r.round_number === currentRound.round_number - 1
+  );
 
   async function startRound() {
     if (!canStart || !currentRound) return;
@@ -53,6 +57,10 @@ export function RoundSetup() {
         .select()
         .single();
       if (ruleError || !rule) throw ruleError;
+
+      const isFinalRound =
+        game!.hide_leaderboard_final_round &&
+        currentRound.round_number >= players.length;
 
       const { error: roundError } = await supabase
         .from("rounds")
@@ -75,17 +83,65 @@ export function RoundSetup() {
     }
   }
 
+  async function goBack() {
+    if (!previousRound || !currentRound) return;
+    if (
+      !window.confirm(
+        `Zurück zu Runde ${previousRound.round_number}? Die aktuelle Runde geht dabei verloren.`
+      )
+    ) {
+      return;
+    }
+    setGoingBack(true);
+    try {
+      const { error: roundError } = await supabase
+        .from("rounds")
+        .update({ status: "active" })
+        .eq("id", previousRound.id);
+      if (roundError) throw roundError;
+
+      const { error: deleteError } = await supabase
+        .from("rounds")
+        .delete()
+        .eq("id", currentRound.id);
+      if (deleteError) throw deleteError;
+
+      const { error: gameError } = await supabase
+        .from("games")
+        .update({ current_round_number: previousRound.round_number })
+        .eq("id", game!.id);
+      if (gameError) throw gameError;
+    } catch (err) {
+      console.error(err);
+      toast.error("Konnte nicht zurückgehen.");
+      setGoingBack(false);
+    }
+  }
+
   return (
     <div className="w-full max-w-sm space-y-6">
-      <div className="text-center space-y-1">
-        <h2 className="font-heading text-2xl font-bold">
-          Runde {currentRound.round_number}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {activePlayer
-            ? `${activePlayer.name} ist an der Reihe — trag ein, was sie/er wählt`
-            : "Bereite die Runde vor"}
-        </p>
+      <div className="space-y-1">
+        {previousRound && (
+          <button
+            type="button"
+            onClick={goBack}
+            disabled={goingBack}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Zurück zu Runde {previousRound.round_number}
+          </button>
+        )}
+        <div className="text-center space-y-1">
+          <h2 className="font-heading text-2xl font-bold">
+            Runde {currentRound.round_number}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {activePlayer
+              ? `${activePlayer.name} ist an der Reihe — trag ein, was sie/er wählt`
+              : "Bereite die Runde vor"}
+          </p>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -116,7 +172,10 @@ export function RoundSetup() {
       </div>
 
       <div className="space-y-2 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-        <Label htmlFor="rule-text">Neue Regel für den Rest des Spiels</Label>
+        <Label htmlFor="rule-text" className="flex items-center gap-1.5">
+          <ScrollText className="h-4 w-4 text-primary" />
+          Neue Regel für den Rest des Spiels
+        </Label>
         <Textarea
           id="rule-text"
           value={ruleText}
@@ -140,7 +199,10 @@ export function RoundSetup() {
 
       <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
         <div className="flex items-center justify-between">
-          <Label htmlFor="minigame-toggle">Minispiel ausrufen</Label>
+          <Label htmlFor="minigame-toggle" className="flex items-center gap-1.5">
+            <Dices className="h-4 w-4 text-primary" />
+            Minispiel ausrufen
+          </Label>
           <Switch
             id="minigame-toggle"
             checked={minigameEnabled}
@@ -184,22 +246,6 @@ export function RoundSetup() {
           </div>
         )}
       </div>
-
-      {game.hide_leaderboard_final_round && (
-        <div className="flex items-center justify-between gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-          <div>
-            <Label htmlFor="final-round-toggle">Letzte Runde</Label>
-            <p className="text-xs text-muted-foreground">
-              Versteckt die Rangliste ab jetzt bis zum Endergebnis.
-            </p>
-          </div>
-          <Switch
-            id="final-round-toggle"
-            checked={isFinalRound}
-            onCheckedChange={setIsFinalRound}
-          />
-        </div>
-      )}
 
       <Button
         size="lg"

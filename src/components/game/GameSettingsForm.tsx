@@ -3,14 +3,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScoringTableEditor } from "@/components/game/ScoringTableEditor";
 import { HeaderImageUpload } from "@/components/game/HeaderImageUpload";
-import type { ScoringTable } from "@/types/database";
+import { PenaltyTypesEditor } from "@/components/game/PenaltyTypesEditor";
+import type { PenaltyType, ScoringTable } from "@/types/database";
 
 export type GameSettings = {
   scoringTable: ScoringTable;
   defaultDrink: string;
-  defaultRulePoints: number;
-  defaultMinigamePointsWinner: number;
-  defaultMinigamePointsLoser: number;
+  penaltyTypes: PenaltyType[];
   headerImageUrl: string | null;
   showFinalPresentation: boolean;
   showLiveLeaderboard: boolean;
@@ -54,48 +53,10 @@ export function GameSettingsForm({
         </p>
       </div>
 
-      <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-        <Label>Standard-Punkte für neue Regeln</Label>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-muted-foreground">
-            Punkte bei Regelbruch
-          </span>
-          <Input
-            type="number"
-            value={value.defaultRulePoints}
-            onChange={(e) =>
-              set("defaultRulePoints", Number(e.target.value))
-            }
-            className="w-20 text-center"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-        <Label>Standard-Punkte für Minispiele</Label>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <span className="text-xs text-muted-foreground">Gewinner</span>
-            <Input
-              type="number"
-              value={value.defaultMinigamePointsWinner}
-              onChange={(e) =>
-                set("defaultMinigamePointsWinner", Number(e.target.value))
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs text-muted-foreground">Verlierer</span>
-            <Input
-              type="number"
-              value={value.defaultMinigamePointsLoser}
-              onChange={(e) =>
-                set("defaultMinigamePointsLoser", Number(e.target.value))
-              }
-            />
-          </div>
-        </div>
-      </div>
+      <PenaltyTypesEditor
+        value={value.penaltyTypes}
+        onChange={(t) => set("penaltyTypes", t)}
+      />
 
       <div className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3">
@@ -134,8 +95,8 @@ export function GameSettingsForm({
                 Spannung in der letzten Runde
               </Label>
               <p className="text-xs text-muted-foreground">
-                Rangliste wird versteckt, sobald der Host eine Runde als
-                „letzte Runde&rdquo; markiert — Auflösung erst am Ende.
+                Rangliste wird versteckt, sobald jeder einmal dran war —
+                Auflösung erst im Endergebnis.
               </p>
             </div>
             <Switch

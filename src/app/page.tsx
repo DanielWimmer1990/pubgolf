@@ -30,6 +30,7 @@ const STATUS_CLASS: Record<GameStatus, string> = {
 export default function HomePage() {
   const router = useRouter();
   const [code, setCode] = useState("");
+  const [showJoin, setShowJoin] = useState(false);
   const [recentGames, setRecentGames] = useState<RecentGameView[]>([]);
 
   useEffect(() => {
@@ -85,7 +86,7 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="w-full max-w-xs space-y-4">
+      <div className="w-full max-w-xs">
         <Button
           asChild
           size="lg"
@@ -93,26 +94,47 @@ export default function HomePage() {
         >
           <a href="/create">Neues Spiel starten</a>
         </Button>
+      </div>
 
-        <form onSubmit={handleJoin} className="flex flex-col gap-2">
-          <Input
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="Spielcode eingeben"
-            className="h-12 text-center text-lg tracking-widest uppercase"
-            maxLength={8}
-            autoCapitalize="characters"
-          />
+      <div className="w-full max-w-xs space-y-3">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="h-px flex-1 bg-white/10" />
+          oder
+          <span className="h-px flex-1 bg-white/10" />
+        </div>
+
+        {showJoin ? (
+          <form onSubmit={handleJoin} className="flex flex-col gap-2">
+            <Input
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="Spielcode eingeben"
+              className="h-12 text-center text-lg tracking-widest uppercase"
+              maxLength={8}
+              autoCapitalize="characters"
+              autoFocus
+            />
+            <Button
+              type="submit"
+              variant="secondary"
+              size="lg"
+              className="w-full text-base"
+              disabled={normalizeGameCode(code).length < 4}
+            >
+              Beitreten
+            </Button>
+          </form>
+        ) : (
           <Button
-            type="submit"
-            variant="secondary"
+            type="button"
+            variant="outline"
             size="lg"
-            className="w-full text-base"
-            disabled={normalizeGameCode(code).length < 4}
+            className="w-full border-white/15 text-base text-muted-foreground"
+            onClick={() => setShowJoin(true)}
           >
             Spiel beitreten
           </Button>
-        </form>
+        )}
       </div>
 
       {recentGames.length > 0 && (
