@@ -1,31 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const SIZE = 84; // px, cube edge length
-const HALF = SIZE / 2;
-
-// Opposite faces sum to 7, like a real die. Each entry is the canonical
-// rotation (mod 360) that brings that face to point at the camera.
-const FACE_TARGET_ROTATION: Record<number, { x: number; y: number }> = {
-  1: { x: 0, y: 0 },
-  6: { x: 0, y: 180 },
-  2: { x: 0, y: -90 },
-  5: { x: 0, y: 90 },
-  3: { x: -90, y: 0 },
-  4: { x: 90, y: 0 },
-};
-
-const FACE_STATIC_TRANSFORM: Record<number, string> = {
-  1: `translateZ(${HALF}px)`,
-  6: `rotateY(180deg) translateZ(${HALF}px)`,
-  2: `rotateY(90deg) translateZ(${HALF}px)`,
-  5: `rotateY(-90deg) translateZ(${HALF}px)`,
-  3: `rotateX(90deg) translateZ(${HALF}px)`,
-  4: `rotateX(-90deg) translateZ(${HALF}px)`,
-};
+const SIZE = 96; // px
 
 const PIP_LAYOUTS: Record<number, [number, number][]> = {
   1: [[1, 1]],
@@ -61,19 +40,10 @@ const PIP_LAYOUTS: Record<number, [number, number][]> = {
   ],
 };
 
-// Shortest forward (non-negative) distance from `from` to an angle
-// congruent with `to`, so rotation only ever accumulates and never has to
-// snap backwards (which read as a jarring second "roll").
-function forwardDelta(from: number, to: number): number {
-  const diff = ((to - from) % 360 + 360) % 360;
-  return diff;
-}
-
 function DieFace({ value }: { value: number }) {
   return (
     <div
-      className="grid h-full w-full grid-cols-3 grid-rows-3 gap-1 rounded-xl border border-white/25 bg-gradient-to-br from-orange-400 to-pink-500 p-2.5 shadow-[inset_0_2px_6px_rgba(255,255,255,0.4),inset_0_-4px_10px_rgba(0,0,0,0.25)]"
-      style={{ backfaceVisibility: "hidden" }}
+      className="grid h-full w-full grid-cols-3 grid-rows-3 gap-1.5 rounded-2xl border border-white/25 bg-gradient-to-br from-orange-400 to-pink-500 p-3 shadow-[inset_0_3px_8px_rgba(255,255,255,0.45),inset_0_-5px_12px_rgba(0,0,0,0.25)]"
     >
       {Array.from({ length: 9 }).map((_, i) => {
         const row = Math.floor(i / 3);
@@ -84,7 +54,7 @@ function DieFace({ value }: { value: number }) {
         return (
           <div key={i} className="flex items-center justify-center">
             {active && (
-              <span className="h-2.5 w-2.5 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.4)]" />
+              <span className="h-3 w-3 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.4)]" />
             )}
           </div>
         );
@@ -92,6 +62,10 @@ function DieFace({ value }: { value: number }) {
     </div>
   );
 }
+
+// A bouncing, wobbling roll (no 3D transforms) — a rapid face-flicker that
+// decelerates and settles with a little "thud", instead of a spinning cube.
+const TOTAL_TICKS = 18;
 
 export function DiceRoller({
   value,
@@ -103,65 +77,83 @@ export function DiceRoller({
   disabled?: boolean;
 }) {
   const [rolling, setRolling] = useState(false);
-  const [rotation, setRotation] = useState({ rotateX: -20, rotateY: 30 });
+  const [displayValue, setDisplayValue] = useState(value ?? 1);
+  const [transform, setTransform] = useState({ y: 0, rotate: 0, scale: 1 });
+  const timeoutRef = useRef<number | null>(null);
 
   function roll() {
     if (rolling || disabled) return;
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     const final = 1 + Math.floor(Math.random() * 6);
-    const target = FACE_TARGET_ROTATION[final];
-    const spins = 3 + Math.floor(Math.random() * 2);
-
     setRolling(true);
-    setRotation((prev) => ({
-      rotateX: prev.rotateX + forwardDelta(prev.rotateX, target.x) + 360 * spins,
-      rotateY: prev.rotateY + forwardDelta(prev.rotateY, target.y) + 360 * spins,
-    }));
 
-    window.setTimeout(() => {
-      setRolling(false);
-      onRoll(final);
-    }, 2000);
+    let tick = 0;
+    const step = () => {
+      tick += 1;
+      const progress = tick / TOTAL_TICKS;
+      const isLast = tick >= TOTAL_TICKS;
+      const faceValue = isLast ? final : 1 + Math.floor(Math.random() * 6);
+      setDisplayValue(faceValue);
+
+      const decay = 1 - progress;
+      const bounce = Math.abs(Math.sin(progress * Math.PI * 5)) * 22 * decay;
+      const wobble = (Math.random() - 0.5) * 50 * decay;
+
+      setTransform({
+        y: isLast ? 0 : -bounce,
+        rotate: isLast ? 0 : wobble,
+        scale: isLast ? 1.15 : 1 - decay * 0.05,
+      });
+
+      if (isLast) {
+        setRolling(false);
+        onRoll(final);
+        window.setTimeout(
+          () => setTransform({ y: 0, rotate: 0, scale: 1 }),
+          160
+        );
+        return;
+      }
+
+      const delay = 45 + progress * progress * 150;
+      timeoutRef.current = window.setTimeout(step, delay);
+    };
+    step();
   }
 
+  const shadowScale = 1 - Math.min(Math.abs(transform.y) / 22, 1) * 0.4;
+
   return (
-    <div className="flex flex-col items-center gap-5">
+    <div className="flex flex-col items-center gap-4">
       <button
         type="button"
         onClick={roll}
         disabled={disabled}
         aria-label="Würfeln"
         className={cn(
-          "relative outline-none [-webkit-tap-highlight-color:transparent] focus:outline-none focus-visible:outline-none",
+          "relative flex flex-col items-center outline-none [-webkit-tap-highlight-color:transparent] focus:outline-none focus-visible:outline-none",
           !disabled && "cursor-pointer",
           disabled && "opacity-60"
         )}
-        style={{ perspective: 500 }}
       >
         <div
-          className="relative"
           style={{
             width: SIZE,
             height: SIZE,
-            transformStyle: "preserve-3d",
-            transform: `rotateX(${rotation.rotateX}deg) rotateY(${rotation.rotateY}deg)`,
-            transition: rolling
-              ? "transform 2s cubic-bezier(0.16, 0.85, 0.24, 1)"
-              : "transform 0.4s ease-out",
+            transform: `translateY(${transform.y}px) rotate(${transform.rotate}deg) scale(${transform.scale})`,
+            transition: "transform 90ms ease-out",
           }}
         >
-          {([1, 2, 3, 4, 5, 6] as const).map((face) => (
-            <div
-              key={face}
-              className="absolute inset-0"
-              style={{
-                transform: FACE_STATIC_TRANSFORM[face],
-                backfaceVisibility: "hidden",
-              }}
-            >
-              <DieFace value={face} />
-            </div>
-          ))}
+          <DieFace value={displayValue} />
         </div>
+        <div
+          className="mt-1 h-2.5 w-16 rounded-full bg-black/40 blur-[2px]"
+          style={{
+            transform: `scaleX(${shadowScale})`,
+            opacity: 0.5 * shadowScale,
+            transition: "transform 90ms ease-out, opacity 90ms ease-out",
+          }}
+        />
       </button>
 
       <Button

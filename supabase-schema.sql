@@ -25,9 +25,9 @@ create table games (
   show_live_leaderboard             boolean not null default true,
   hide_leaderboard_final_round      boolean not null default false,
   penalty_types                     jsonb not null default '[
-                                       {"id": "water_hazard", "name": "Water Hazard (Klogang)", "points": 10},
-                                       {"id": "spill", "name": "Getränk umschütten", "points": 5},
-                                       {"id": "vomit", "name": "Kotzen", "points": 20}
+                                       {"id": "water_hazard", "name": "Water Hazard (Klogang)", "points": 10, "icon": "🚽"},
+                                       {"id": "spill", "name": "Getränk umschütten", "points": 5, "icon": "💧"},
+                                       {"id": "vomit", "name": "Kotzen", "points": 20, "icon": "🤮"}
                                      ]'::jsonb
 );
 

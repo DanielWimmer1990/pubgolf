@@ -15,15 +15,14 @@ export function HostSipEntry({ round }: { round: Round }) {
 
   const existing = new Map(
     roundDrinks
-      .filter((rd) => rd.round_id === round.id)
-      .map((rd) => [rd.player_id, rd.sips ?? par])
+      .filter((rd) => rd.round_id === round.id && rd.sips != null)
+      .map((rd) => [rd.player_id, rd.sips as number])
   );
 
+  // undefined = host hasn't touched this player's stepper yet — stays
+  // unsaved so "X / Y fertig" only counts sips the host actually entered.
   const [sipsByPlayer, setSipsByPlayer] = useState<Record<string, number>>(
-    () =>
-      Object.fromEntries(
-        players.map((p) => [p.id, existing.get(p.id) ?? par])
-      )
+    () => Object.fromEntries(existing)
   );
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,12 +32,24 @@ export function HostSipEntry({ round }: { round: Round }) {
     setSipsByPlayer((prev) => ({ ...prev, [playerId]: Math.max(0, value) }));
   }
 
+  function bump(playerId: string, delta: number) {
+    const current = sipsByPlayer[playerId];
+    setSips(playerId, current === undefined ? par + delta : current + delta);
+  }
+
+  function setToPar(playerId: string) {
+    setSips(playerId, par);
+  }
+
+  const touchedIds = Object.keys(sipsByPlayer);
+
   async function submitAll() {
+    if (touchedIds.length === 0) return;
     setSubmitting(true);
-    const rows = players.map((p) => ({
+    const rows = touchedIds.map((playerId) => ({
       round_id: round.id,
-      player_id: p.id,
-      sips: sipsByPlayer[p.id] ?? par,
+      player_id: playerId,
+      sips: sipsByPlayer[playerId],
     }));
     const { error } = await supabase
       .from("round_drinks")
@@ -59,8 +70,11 @@ export function HostSipEntry({ round }: { round: Round }) {
       </p>
       <ul className="space-y-2">
         {players.map((player) => {
-          const sips = sipsByPlayer[player.id] ?? par;
-          const points = game ? computePointsForSips(sips, par, game.scoring_table) : 0;
+          const sips = sipsByPlayer[player.id];
+          const points =
+            sips === undefined
+              ? null
+              : computePointsForSips(sips, par, game.scoring_table);
           return (
             <li
               key={player.id}
@@ -78,17 +92,22 @@ export function HostSipEntry({ round }: { round: Round }) {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setSips(player.id, sips - 1)}
+                  onClick={() => bump(player.id, -1)}
                   className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 text-lg hover:bg-white/10"
                 >
                   −
                 </button>
-                <span className="w-6 text-center text-lg font-bold tabular-nums">
-                  {sips}
-                </span>
                 <button
                   type="button"
-                  onClick={() => setSips(player.id, sips + 1)}
+                  onClick={() => setToPar(player.id)}
+                  className="w-6 text-center text-lg font-bold tabular-nums text-muted-foreground data-[set=true]:text-foreground"
+                  data-set={sips !== undefined}
+                >
+                  {sips ?? "–"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => bump(player.id, 1)}
                   className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 text-lg hover:bg-white/10"
                 >
                   +
@@ -96,15 +115,18 @@ export function HostSipEntry({ round }: { round: Round }) {
               </div>
               <span
                 className={
-                  points > 0
+                  points === null
+                    ? "w-10 text-right text-sm text-muted-foreground"
+                    : points > 0
                     ? "w-10 text-right text-sm font-bold text-emerald-400"
                     : points < 0
                     ? "w-10 text-right text-sm font-bold text-red-400"
                     : "w-10 text-right text-sm font-bold text-muted-foreground"
                 }
               >
-                {points > 0 ? "+" : ""}
-                {points}
+                {points === null
+                  ? "–"
+                  : `${points > 0 ? "+" : ""}${points}`}
               </span>
             </li>
           );
@@ -115,9 +137,13 @@ export function HostSipEntry({ round }: { round: Round }) {
         size="lg"
         className="w-full text-base"
         onClick={submitAll}
-        disabled={submitting}
+        disabled={submitting || touchedIds.length === 0}
       >
-        {submitting ? "Speichere…" : "Speichern"}
+        {submitting
+          ? "Speichere…"
+          : touchedIds.length > 0
+          ? `Speichern (${touchedIds.length})`
+          : "Speichern"}
       </Button>
     </div>
   );

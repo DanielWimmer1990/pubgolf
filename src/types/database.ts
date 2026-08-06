@@ -15,6 +15,7 @@ export type PenaltyType = {
   id: string;
   name: string;
   points: number;
+  icon: string;
 };
 
 export type Game = {

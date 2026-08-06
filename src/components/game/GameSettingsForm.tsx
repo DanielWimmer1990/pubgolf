@@ -2,7 +2,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScoringTableEditor } from "@/components/game/ScoringTableEditor";
-import { HeaderImageUpload } from "@/components/game/HeaderImageUpload";
 import { PenaltyTypesEditor } from "@/components/game/PenaltyTypesEditor";
 import type { PenaltyType, ScoringTable } from "@/types/database";
 
@@ -10,7 +9,6 @@ export type GameSettings = {
   scoringTable: ScoringTable;
   defaultDrink: string;
   penaltyTypes: PenaltyType[];
-  headerImageUrl: string | null;
   showFinalPresentation: boolean;
   showLiveLeaderboard: boolean;
   hideLeaderboardFinalRound: boolean;
@@ -29,11 +27,6 @@ export function GameSettingsForm({
 
   return (
     <div className="space-y-6">
-      <HeaderImageUpload
-        value={value.headerImageUrl}
-        onChange={(url) => set("headerImageUrl", url)}
-      />
-
       <ScoringTableEditor
         value={value.scoringTable}
         onChange={(t) => set("scoringTable", t)}

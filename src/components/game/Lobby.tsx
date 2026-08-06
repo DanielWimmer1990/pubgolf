@@ -70,17 +70,6 @@ export function Lobby() {
         Startseite
       </Link>
 
-      {game.header_image_url && (
-        <div className="w-full max-w-sm">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={game.header_image_url}
-            alt=""
-            className="h-32 w-full rounded-3xl border border-white/10 object-cover"
-          />
-        </div>
-      )}
-
       <div className="text-center space-y-1">
         <h1 className="font-heading text-3xl font-bold">
           {game.name || "Pubgolf-Spiel"}

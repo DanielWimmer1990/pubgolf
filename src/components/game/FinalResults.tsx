@@ -139,15 +139,6 @@ export function FinalResults() {
 
   return (
     <div className="w-full max-w-sm space-y-8 py-6">
-      {game?.header_image_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={game.header_image_url}
-          alt=""
-          className="h-32 w-full rounded-3xl border border-white/10 object-cover"
-        />
-      )}
-
       <div className="text-center space-y-1">
         <div className="text-6xl">🏁</div>
         <h1 className="font-heading text-4xl font-bold bg-gradient-to-r from-orange-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
