@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
@@ -14,6 +14,39 @@ import { cn } from "@/lib/utils";
 import type { Player } from "@/types/database";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
+const REVEAL_STEP = 0.7;
+const CONFETTI_COLORS = ["#F97316", "#EF4444", "#EAB308", "#10B981", "#FBBF24"];
+
+function fireConfetti(big = false) {
+  const duration = big ? 2200 : 1400;
+  const end = Date.now() + duration;
+  (function frame() {
+    confetti({
+      particleCount: big ? 10 : 4,
+      angle: 60,
+      spread: big ? 100 : 60,
+      origin: { x: 0 },
+      colors: CONFETTI_COLORS,
+    });
+    confetti({
+      particleCount: big ? 10 : 4,
+      angle: 120,
+      spread: big ? 100 : 60,
+      origin: { x: 1 },
+      colors: CONFETTI_COLORS,
+    });
+    if (big) {
+      confetti({
+        particleCount: 24,
+        spread: 120,
+        startVelocity: 48,
+        origin: { x: 0.5, y: 0.3 },
+        colors: CONFETTI_COLORS,
+      });
+    }
+    if (Date.now() < end) requestAnimationFrame(frame);
+  })();
+}
 
 type FunAward = {
   emoji: string;
@@ -35,29 +68,16 @@ export function FinalResults() {
   } = useGame();
   const presentation = game?.show_final_presentation ?? true;
   const contentRef = useRef<HTMLDivElement>(null);
+  const [revealed, setRevealed] = useState(false);
+  const showResults = !presentation || revealed;
 
-  useEffect(() => {
-    if (!presentation) return;
-    const duration = 2000;
-    const end = Date.now() + duration;
-    (function frame() {
-      confetti({
-        particleCount: 4,
-        angle: 60,
-        spread: 60,
-        origin: { x: 0 },
-        colors: ["#F97316", "#EF4444", "#EAB308", "#10B981"],
-      });
-      confetti({
-        particleCount: 4,
-        angle: 120,
-        spread: 60,
-        origin: { x: 1 },
-        colors: ["#F97316", "#EF4444", "#EAB308", "#10B981"],
-      });
-      if (Date.now() < end) requestAnimationFrame(frame);
-    })();
-  }, [presentation]);
+  function reveal() {
+    if (revealed) return;
+    setRevealed(true);
+    fireConfetti();
+    const winnerDelayMs = leaderboard.length * REVEAL_STEP * 1000;
+    window.setTimeout(() => fireConfetti(true), winnerDelayMs + 200);
+  }
 
   const funAwards = useMemo<FunAward[]>(() => {
     const awards: FunAward[] = [];
@@ -292,75 +312,93 @@ export function FinalResults() {
           <p className="text-sm text-muted-foreground">Endstand</p>
         </div>
 
-        <ul className="space-y-2">
-          {leaderboard.map(({ player, total }, index) =>
-            presentation ? (
-              <motion.li
-                key={player.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: (leaderboard.length - index) * 0.08 }}
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-xl",
-                  index === 0 && "border-amber-400/60 bg-amber-400/10"
-                )}
-              >
-                <span className="w-7 text-center text-lg">
-                  {MEDALS[index] ?? index + 1}
-                </span>
-                <PlayerAvatar
-                  name={player.name}
-                  color={player.color}
-                  avatarEmoji={player.avatar_emoji}
-                  size="md"
-                />
-                <span className="flex-1 truncate font-semibold">
-                  {player.name}
-                </span>
-                <span
+        {presentation && !revealed ? (
+          <div className="flex flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white/5 py-10 backdrop-blur-xl">
+            <p className="text-sm text-muted-foreground">Wer hat gewonnen?</p>
+            <Button size="lg" className="gap-2 text-base" onClick={reveal}>
+              🥁 Rangliste aufdecken
+            </Button>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {leaderboard.map(({ player, total }, index) =>
+              presentation ? (
+                <motion.li
+                  key={player.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={
+                    index === 0
+                      ? { opacity: 1, y: 0, scale: [1, 1.3, 1] }
+                      : { opacity: 1, y: 0 }
+                  }
+                  transition={{
+                    delay: (leaderboard.length - index) * REVEAL_STEP,
+                    duration: index === 0 ? 0.7 : 0.4,
+                    times: index === 0 ? [0, 0.5, 1] : undefined,
+                  }}
                   className={cn(
-                    "text-lg font-bold tabular-nums",
-                    total > 0 && "text-emerald-500",
-                    total < 0 && "text-red-500"
+                    "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-xl",
+                    index === 0 &&
+                      "border-amber-400/60 bg-amber-400/10 shadow-[0_0_40px_-8px] shadow-amber-400/50"
                   )}
                 >
-                  {total > 0 ? "+" : ""}
-                  {total}
-                </span>
-              </motion.li>
-            ) : (
-              <li
-                key={player.id}
-                className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2"
-              >
-                <span className="w-6 text-center text-sm text-muted-foreground">
-                  {index + 1}.
-                </span>
-                <PlayerAvatar
-                  name={player.name}
-                  color={player.color}
-                  avatarEmoji={player.avatar_emoji}
-                  size="sm"
-                />
-                <span className="flex-1 truncate font-medium">
-                  {player.name}
-                </span>
-                <span
-                  className={cn(
-                    "font-bold tabular-nums",
-                    total > 0 && "text-emerald-500",
-                    total < 0 && "text-red-500"
-                  )}
+                  <span className="w-7 text-center text-lg">
+                    {MEDALS[index] ?? index + 1}
+                  </span>
+                  <PlayerAvatar
+                    name={player.name}
+                    color={player.color}
+                    avatarEmoji={player.avatar_emoji}
+                    size="md"
+                  />
+                  <span className="flex-1 truncate font-semibold">
+                    {player.name}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-lg font-bold tabular-nums",
+                      total > 0 && "text-emerald-500",
+                      total < 0 && "text-red-500"
+                    )}
+                  >
+                    {total > 0 ? "+" : ""}
+                    {total}
+                  </span>
+                </motion.li>
+              ) : (
+                <li
+                  key={player.id}
+                  className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2"
                 >
-                  {total > 0 ? "+" : ""}
-                  {total}
-                </span>
-              </li>
-            )
-          )}
-        </ul>
+                  <span className="w-6 text-center text-sm text-muted-foreground">
+                    {index + 1}.
+                  </span>
+                  <PlayerAvatar
+                    name={player.name}
+                    color={player.color}
+                    avatarEmoji={player.avatar_emoji}
+                    size="sm"
+                  />
+                  <span className="flex-1 truncate font-medium">
+                    {player.name}
+                  </span>
+                  <span
+                    className={cn(
+                      "font-bold tabular-nums",
+                      total > 0 && "text-emerald-500",
+                      total < 0 && "text-red-500"
+                    )}
+                  >
+                    {total > 0 ? "+" : ""}
+                    {total}
+                  </span>
+                </li>
+              )
+            )}
+          </ul>
+        )}
 
-        {presentation && summary && (
+        {presentation && showResults && summary && (
           <div className="space-y-1.5">
             <p className="text-sm font-medium text-muted-foreground">
               Zusammenfassung
@@ -371,7 +409,7 @@ export function FinalResults() {
           </div>
         )}
 
-        {presentation && progression.maxRound > 1 && (
+        {presentation && showResults && progression.maxRound > 1 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">
               Punkteverlauf
@@ -386,7 +424,7 @@ export function FinalResults() {
           </div>
         )}
 
-        {presentation && funAwards.length > 0 && (
+        {presentation && showResults && funAwards.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">
               Fun Awards
