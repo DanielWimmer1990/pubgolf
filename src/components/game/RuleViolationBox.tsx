@@ -21,11 +21,14 @@ export function RuleViolationBox({ round }: { round: Round }) {
   const [pending, setPending] = useState<PendingEntry[]>([]);
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
   if (rules.length === 0) return null;
 
+  // Excludes optimistically-removed rows immediately, rather than waiting
+  // for the realtime DELETE event to round-trip back into ruleViolations.
   const savedForRound = ruleViolations.filter(
-    (rv) => rv.round_id === round.id
+    (rv) => rv.round_id === round.id && !removedIds.has(rv.id)
   );
 
   function countFor(ruleId: string, playerId: string) {
@@ -60,6 +63,7 @@ export function RuleViolationBox({ round }: { round: Round }) {
       .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
     if (!savedMatch) return;
 
+    setRemovedIds((prev) => new Set(prev).add(savedMatch.id));
     setRemovingId(savedMatch.id);
     const { error } = await supabase
       .from("rule_violations")
@@ -69,6 +73,11 @@ export function RuleViolationBox({ round }: { round: Round }) {
     if (error) {
       console.error(error);
       toast.error("Konnte nicht entfernt werden.");
+      setRemovedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(savedMatch.id);
+        return next;
+      });
     }
   }
 

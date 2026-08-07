@@ -28,8 +28,9 @@ export function ScoringTableEditor({
         <p className="text-sm text-muted-foreground">
           Genau das gewürfelte PAR getroffen? 0 Punkte. Wer mehr Schlucke
           braucht als gewürfelt, bekommt <span className="text-emerald-400 font-medium">Pluspunkte</span> —
-          wer weniger braucht, <span className="text-red-400 font-medium">Minuspunkte</span>. Frei
-          anpassbar für jede Zeile.
+          wer weniger braucht, <span className="text-red-400 font-medium">Minuspunkte</span>. Nur der
+          erste Schluck drüber/drunter ist einstellbar, jeder weitere zählt
+          im gleichen Schritt weiter.
         </p>
       </div>
 
@@ -40,21 +41,28 @@ export function ScoringTableEditor({
             className="flex items-center justify-between gap-3 px-3 py-2"
           >
             <span className="text-sm">{diffLabel(row.diff)}</span>
-            <NumberInput
-              value={row.points}
-              onChange={(v) => updatePoints(row.diff, v)}
-              className={cn(
-                "w-20 text-center font-semibold",
-                row.points > 0 && "text-emerald-400",
-                row.points < 0 && "text-red-400"
-              )}
-            />
+            {row.diff === 0 ? (
+              <span className="w-20 text-center text-sm font-semibold text-muted-foreground">
+                0
+              </span>
+            ) : (
+              <NumberInput
+                value={row.points}
+                onChange={(v) => updatePoints(row.diff, v)}
+                className={cn(
+                  "w-20 text-center font-semibold",
+                  row.points > 0 && "text-emerald-400",
+                  row.points < 0 && "text-red-400"
+                )}
+              />
+            )}
           </div>
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        Abweichungen über diesen Bereich hinaus werden im gleichen Schritt
-        weitergerechnet (z.B. PAR 6 bei 1 Schluck ergibt weiterhin −10).
+        Jeder weitere Schluck darüber oder darunter zählt im gleichen Schritt
+        weiter (z.B. PAR 6 bei 1 Schluck ergibt −10, wenn 1 unter PAR = −2
+        ist).
       </p>
     </div>
   );

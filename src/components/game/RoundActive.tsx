@@ -42,18 +42,25 @@ export function RoundActive() {
 
   return (
     <div className="flex w-full flex-col items-center gap-8">
-      {currentRound.bar_name && (
-        <div className="text-center">
-          <p className="font-heading text-xl font-semibold">
-            {currentRound.bar_name}
+      <div className="text-center">
+        {currentRound.round_number === players.length && (
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+            🏁 Letzte Runde
           </p>
-          {currentRound.drink_description && (
-            <p className="text-sm text-muted-foreground">
-              {currentRound.drink_description}
+        )}
+        {currentRound.bar_name && (
+          <>
+            <p className="font-heading text-xl font-semibold">
+              {currentRound.bar_name}
             </p>
-          )}
-        </div>
-      )}
+            {currentRound.drink_description && (
+              <p className="text-sm text-muted-foreground">
+                {currentRound.drink_description}
+              </p>
+            )}
+          </>
+        )}
+      </div>
 
       {isHost ? (
         <HostSipEntry round={currentRound} />

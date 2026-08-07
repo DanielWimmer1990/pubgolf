@@ -12,8 +12,11 @@ export function ScoreProgressionChart({
   if (maxRound < 1) return null;
 
   const width = 320;
-  const height = 160;
-  const padding = 22;
+  const height = 170;
+  const padTop = 10;
+  const padBottom = 20;
+  const padLeft = 30;
+  const padRight = 12;
 
   const allValues = players
     .flatMap((p) => series.get(p.id) ?? [])
@@ -21,42 +24,66 @@ export function ScoreProgressionChart({
   const min = Math.min(...allValues);
   const max = Math.max(...allValues);
   const range = max - min || 1;
+  const mid = Math.round((min + max) / 2);
+  const ticks = [...new Set([max, mid, min])];
 
   function x(roundIndex: number) {
     return (
-      padding +
-      (roundIndex / Math.max(1, maxRound - 1)) * (width - padding * 2)
+      padLeft +
+      (roundIndex / Math.max(1, maxRound - 1)) * (width - padLeft - padRight)
     );
   }
   function y(value: number) {
-    return height - padding - ((value - min) / range) * (height - padding * 2);
+    return (
+      height -
+      padBottom -
+      ((value - min) / range) * (height - padTop - padBottom)
+    );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        Punkte pro Runde
+      </p>
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="w-full"
         preserveAspectRatio="xMidYMid meet"
       >
-        <line
-          x1={padding}
-          y1={y(0)}
-          x2={width - padding}
-          y2={y(0)}
-          stroke="currentColor"
-          strokeOpacity={0.15}
-          strokeDasharray="4 3"
-        />
+        {ticks.map((tick) => (
+          <g key={tick}>
+            <line
+              x1={padLeft}
+              y1={y(tick)}
+              x2={width - padRight}
+              y2={y(tick)}
+              stroke="currentColor"
+              strokeOpacity={tick === 0 ? 0.25 : 0.1}
+              strokeDasharray={tick === 0 ? undefined : "3 3"}
+            />
+            <text
+              x={padLeft - 5}
+              y={y(tick)}
+              fontSize={9}
+              textAnchor="end"
+              dominantBaseline="middle"
+              fill="currentColor"
+              opacity={0.55}
+            >
+              {tick > 0 ? `+${tick}` : tick}
+            </text>
+          </g>
+        ))}
         {Array.from({ length: maxRound }).map((_, i) => (
           <text
             key={i}
             x={x(i)}
-            y={height - 4}
-            fontSize={8}
+            y={height - 6}
+            fontSize={9}
             textAnchor="middle"
             fill="currentColor"
-            opacity={0.4}
+            opacity={0.5}
           >
             R{i + 1}
           </text>
@@ -97,18 +124,28 @@ export function ScoreProgressionChart({
         })}
       </svg>
       <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-        {players.map((player) => (
-          <div
-            key={player.id}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground"
-          >
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: player.color }}
-            />
-            {player.name}
-          </div>
-        ))}
+        {players.map((player) => {
+          const values = series.get(player.id) ?? [];
+          const last = values[values.length - 1];
+          return (
+            <div
+              key={player.id}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground"
+            >
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: player.color }}
+              />
+              {player.name}
+              {last !== undefined && (
+                <span className="tabular-nums">
+                  ({last > 0 ? "+" : ""}
+                  {last})
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

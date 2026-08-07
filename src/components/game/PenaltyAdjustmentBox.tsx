@@ -21,11 +21,14 @@ export function PenaltyAdjustmentBox({ round }: { round: Round }) {
   const [pending, setPending] = useState<PendingEntry[]>([]);
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
   if (!game || game.penalty_types.length === 0) return null;
 
+  // Excludes optimistically-removed rows immediately, rather than waiting
+  // for the realtime DELETE event to round-trip back into pointAdjustments.
   const savedForRound = pointAdjustments.filter(
-    (pa) => pa.round_id === round.id
+    (pa) => pa.round_id === round.id && !removedIds.has(pa.id)
   );
 
   function countFor(playerId: string, label: string) {
@@ -60,6 +63,7 @@ export function PenaltyAdjustmentBox({ round }: { round: Round }) {
       .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
     if (!savedMatch) return;
 
+    setRemovedIds((prev) => new Set(prev).add(savedMatch.id));
     setRemovingId(savedMatch.id);
     const { error } = await supabase
       .from("point_adjustments")
@@ -69,6 +73,11 @@ export function PenaltyAdjustmentBox({ round }: { round: Round }) {
     if (error) {
       console.error(error);
       toast.error("Konnte nicht entfernt werden.");
+      setRemovedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(savedMatch.id);
+        return next;
+      });
     }
   }
 

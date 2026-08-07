@@ -2,7 +2,7 @@
 
 import { useState, type RefObject } from "react";
 import { toast } from "sonner";
-import { Share2 } from "lucide-react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function ShareResultsButton({
@@ -36,29 +36,6 @@ export function ShareResultsButton({
       });
       pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
       const blob = pdf.output("blob");
-      const file = new File([blob], fileName, { type: "application/pdf" });
-
-      if (navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: "Pubgolf Ergebnis",
-            text: "Unser Pubgolf-Ergebnis!",
-          });
-          return;
-        } catch (shareErr) {
-          // AbortError = user closed the share sheet on purpose, nothing to do.
-          // Anything else (e.g. lost user-activation after the async capture,
-          // which mobile browsers are strict about) should fall through to
-          // the plain download below instead of silently doing nothing.
-          if (
-            shareErr instanceof DOMException &&
-            shareErr.name === "AbortError"
-          ) {
-            return;
-          }
-        }
-      }
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -86,8 +63,8 @@ export function ShareResultsButton({
       onClick={exportPdf}
       disabled={exporting}
     >
-      <Share2 className="h-4 w-4" />
-      {exporting ? "Erstelle PDF…" : "Als PDF teilen"}
+      <Download className="h-4 w-4" />
+      {exporting ? "Erstelle PDF…" : "PDF herunterladen"}
     </Button>
   );
 }

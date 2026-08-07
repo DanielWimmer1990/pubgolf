@@ -137,20 +137,19 @@ create table point_adjustments (
 -- ── SCORING TRIGGER ────────────────────────────────────────────────────────
 -- Computes round_drinks.points server-side from rounds.par and games.scoring_table,
 -- so points can't be tampered with client-side despite the permissive RLS below.
--- scoring_table shape: { "rows": [ { "diff": -3, "points": 4 }, ..., { "diff": 3, "points": -2 } ] }
--- diff = sips - par, clamped to the table's min/max row before lookup.
--- Beyond the table's edited range (-3..3), extrapolate linearly using the
--- slope of the last step instead of capping at the outermost row's points —
--- e.g. PAR 6 with 1 sip (diff -5) should keep scaling past the diff -3 row.
+-- scoring_table shape: { "rows": [ { "diff": -1, "points": -2 }, { "diff": 0, "points": 0 },
+-- { "diff": 1, "points": 2 } ] } — only the diff -1/0/+1 rows are stored (diff 0 is
+-- always 0); every other diff is a straight multiple of the ±1 step, e.g. PAR 6
+-- with 1 sip (diff -5) is 5x the diff -1 row.
 create or replace function fn_calc_round_drink_points()
 returns trigger as $$
 declare
-  v_par         integer;
-  v_table       jsonb;
-  v_diff        integer;
-  v_points      integer;
-  v_edge_points integer;
-  v_step        integer;
+  v_par     integer;
+  v_table   jsonb;
+  v_diff    integer;
+  v_over    integer;
+  v_under   integer;
+  v_points  integer;
 begin
   select r.game_id, r.par, g.scoring_table into new.game_id, v_par, v_table
   from rounds r join games g on g.id = r.game_id
@@ -163,29 +162,20 @@ begin
 
   v_diff := new.sips - v_par;
 
-  select (row_data->>'points')::integer into v_points
-  from jsonb_array_elements(v_table->'rows') as row_data
-  where (row_data->>'diff')::integer = v_diff;
+  if v_diff = 0 then
+    v_points := 0;
+  else
+    select (row_data->>'points')::integer into v_over
+    from jsonb_array_elements(v_table->'rows') as row_data
+    where (row_data->>'diff')::integer = 1;
+    select (row_data->>'points')::integer into v_under
+    from jsonb_array_elements(v_table->'rows') as row_data
+    where (row_data->>'diff')::integer = -1;
 
-  if v_points is null then
-    if v_diff > 3 then
-      select (row_data->>'points')::integer into v_edge_points
-      from jsonb_array_elements(v_table->'rows') as row_data
-      where (row_data->>'diff')::integer = 3;
-      select v_edge_points - (row_data->>'points')::integer into v_step
-      from jsonb_array_elements(v_table->'rows') as row_data
-      where (row_data->>'diff')::integer = 2;
-      v_points := coalesce(v_edge_points, 0) + coalesce(v_step, 0) * (v_diff - 3);
-    elsif v_diff < -3 then
-      select (row_data->>'points')::integer into v_edge_points
-      from jsonb_array_elements(v_table->'rows') as row_data
-      where (row_data->>'diff')::integer = -3;
-      select v_edge_points - (row_data->>'points')::integer into v_step
-      from jsonb_array_elements(v_table->'rows') as row_data
-      where (row_data->>'diff')::integer = -2;
-      v_points := coalesce(v_edge_points, 0) + coalesce(v_step, 0) * (-3 - v_diff);
+    if v_diff > 0 then
+      v_points := v_diff * coalesce(v_over, 0);
     else
-      v_points := 0;
+      v_points := -v_diff * coalesce(v_under, 0);
     end if;
   end if;
 

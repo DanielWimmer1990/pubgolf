@@ -1,17 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Dices, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DiceRoller } from "@/components/game/DiceRoller";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
+import {
+  getRecentRuleTexts,
+  getRecentMinigameNames,
+  trackRuleText,
+  trackMinigameName,
+} from "@/lib/roundHistory";
 
 export function RoundSetup() {
   const { game, currentRound, activePlayer, players, rounds } = useGame();
@@ -34,6 +39,15 @@ export function RoundSetup() {
   );
   const [submitting, setSubmitting] = useState(false);
   const [goingBack, setGoingBack] = useState(false);
+  const [recentRules, setRecentRules] = useState<string[]>([]);
+  const [recentMinigames, setRecentMinigames] = useState<string[]>([]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setRecentRules(getRecentRuleTexts());
+      setRecentMinigames(getRecentMinigameNames());
+    });
+  }, []);
 
   if (!currentRound || !game) return null;
 
@@ -82,6 +96,11 @@ export function RoundSetup() {
         })
         .eq("id", currentRound.id);
       if (roundError) throw roundError;
+
+      trackRuleText(ruleText);
+      if (minigameEnabled && minigameName.trim()) {
+        trackMinigameName(minigameName);
+      }
     } catch (err) {
       console.error(err);
       toast.error("Runde konnte nicht gestartet werden.");
@@ -139,15 +158,19 @@ export function RoundSetup() {
           </button>
         )}
         <div className="text-center space-y-1">
+          {currentRound.round_number === players.length && (
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+              🏁 Letzte Runde
+            </p>
+          )}
           <h2 className="font-heading text-2xl font-bold">
             Runde {currentRound.round_number}
-            {activePlayer && (
-              <span className="text-muted-foreground font-normal">
-                {" "}
-                · {activePlayer.name}&apos;s Bar
-              </span>
-            )}
           </h2>
+          {activePlayer && (
+            <p className="font-heading text-lg text-muted-foreground">
+              {activePlayer.name}&apos;s Bar
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             {activePlayer
               ? `${activePlayer.name} ist an der Reihe — trag ein, was sie/er wählt`
@@ -188,13 +211,21 @@ export function RoundSetup() {
           <ScrollText className="h-4 w-4 text-primary" />
           Neue Regel für den Rest des Spiels
         </Label>
-        <Textarea
+        <Input
           id="rule-text"
+          list="rule-suggestions"
           value={ruleText}
           onChange={(e) => setRuleText(e.target.value)}
           placeholder="z.B. Kein Ja und Nein mehr sagen"
           maxLength={140}
         />
+        {recentRules.length > 0 && (
+          <datalist id="rule-suggestions">
+            {recentRules.map((text) => (
+              <option key={text} value={text} />
+            ))}
+          </datalist>
+        )}
         <div className="flex items-center justify-between gap-3">
           <Label htmlFor="rule-points" className="text-sm text-muted-foreground">
             Punkte bei Regelbruch
@@ -223,11 +254,19 @@ export function RoundSetup() {
         {minigameEnabled && (
           <div className="space-y-3">
             <Input
+              list="minigame-suggestions"
               value={minigameName}
               onChange={(e) => setMinigameName(e.target.value)}
               placeholder="z.B. Schere Stein Papier"
               maxLength={60}
             />
+            {recentMinigames.length > 0 && (
+              <datalist id="minigame-suggestions">
+                {recentMinigames.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">

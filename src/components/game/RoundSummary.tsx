@@ -20,6 +20,12 @@ function withSign(points: number): string {
   return `${points > 0 ? "+" : ""}${points}`;
 }
 
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]} und ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")} und ${names[names.length - 1]}`;
+}
+
 const BEST_SIP_TEMPLATES = (name: string, points: number) => [
   `${name} rockt die Runde mit ${withSign(points)} Punkten!`,
   `${name} knallt sich mit ${withSign(points)} Punkten die Krone auf!`,
@@ -38,11 +44,18 @@ const PENALTY_TEMPLATES = (name: string, label: string, points: number) => [
   `${name} baut Mist: ${label} (${withSign(points)})`,
 ];
 
-const MINIGAME_TEMPLATES = (name: string, game: string) => [
-  `${name} ist der Meister im "${game}"!`,
-  `${name} räumt bei "${game}" ab!`,
-  `${name} lässt niemandem eine Chance bei "${game}"!`,
-];
+const MINIGAME_TEMPLATES = (name: string, game: string, plural: boolean) =>
+  plural
+    ? [
+        `${name} sind die Meister im "${game}"!`,
+        `${name} räumen bei "${game}" ab!`,
+        `${name} lassen niemandem eine Chance bei "${game}"!`,
+      ]
+    : [
+        `${name} ist der Meister im "${game}"!`,
+        `${name} räumt bei "${game}" ab!`,
+        `${name} lässt niemandem eine Chance bei "${game}"!`,
+      ];
 
 export function RoundSummary() {
   const {
@@ -106,15 +119,23 @@ export function RoundSummary() {
       });
     }
 
-    const winner = minigameResults.find(
+    const winners = minigameResults.filter(
       (mr) => mr.round_id === currentRound.id && mr.outcome === "winner"
     );
-    if (winner && currentRound.minigame_name) {
-      const player = playerById.get(winner.player_id);
-      if (player) {
+    if (winners.length > 0 && currentRound.minigame_name) {
+      const names = winners
+        .map((mr) => playerById.get(mr.player_id)?.name)
+        .filter((n): n is string => !!n);
+      if (names.length > 0) {
         items.push({
           emoji: "🎮",
-          text: pick(MINIGAME_TEMPLATES(player.name, currentRound.minigame_name)),
+          text: pick(
+            MINIGAME_TEMPLATES(
+              joinNames(names),
+              currentRound.minigame_name,
+              names.length > 1
+            )
+          ),
         });
       }
     }
@@ -123,15 +144,6 @@ export function RoundSummary() {
   }, [currentRound, players, roundDrinks, pointAdjustments, minigameResults]);
 
   if (!game || !currentRound) return null;
-
-  const results = players
-    .map((player) => ({
-      player,
-      drink: roundDrinks.find(
-        (rd) => rd.round_id === currentRound.id && rd.player_id === player.id
-      ),
-    }))
-    .sort((a, b) => (b.drink?.points ?? 0) - (a.drink?.points ?? 0));
 
   const isLastBaseRound = currentRound.round_number >= players.length;
   const canSeeLeaderboard =
@@ -215,9 +227,13 @@ export function RoundSummary() {
       )}
       <div className="text-center space-y-1">
         <h2 className="font-heading text-2xl font-bold">
-          Runde {currentRound.round_number}
-          {activePlayer && ` · ${activePlayer.name}'s Bar`} beendet
+          Runde {currentRound.round_number} beendet
         </h2>
+        {activePlayer && (
+          <p className="font-heading text-lg text-muted-foreground">
+            {activePlayer.name}&apos;s Bar
+          </p>
+        )}
         {currentRound.bar_name && (
           <p className="text-sm text-muted-foreground">
             {currentRound.bar_name} · PAR {currentRound.par}
@@ -252,38 +268,6 @@ export function RoundSummary() {
           </ul>
         </div>
       )}
-
-      <p className="text-sm font-medium text-muted-foreground">
-        Diese Runde
-      </p>
-      <ul className="space-y-2">
-        {results.map(({ player, drink }) => (
-          <li
-            key={player.id}
-            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-xl"
-          >
-            <PlayerAvatar
-              name={player.name}
-              color={player.color}
-              avatarEmoji={player.avatar_emoji}
-              size="sm"
-            />
-            <span className="flex-1 truncate font-medium">{player.name}</span>
-            <span
-              className={
-                (drink?.points ?? 0) > 0
-                  ? "font-bold text-emerald-500"
-                  : (drink?.points ?? 0) < 0
-                  ? "font-bold text-red-500"
-                  : "font-bold text-muted-foreground"
-              }
-            >
-              {(drink?.points ?? 0) > 0 ? "+" : ""}
-              {drink?.points ?? 0}
-            </span>
-          </li>
-        ))}
-      </ul>
 
       {!isHost && (
         <p className="text-center text-sm text-muted-foreground">
