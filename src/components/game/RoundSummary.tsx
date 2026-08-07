@@ -146,10 +146,13 @@ export function RoundSummary() {
   if (!game || !currentRound) return null;
 
   const isLastBaseRound = currentRound.round_number >= players.length;
+  // Suspense for the final round hides the leaderboard from everyone,
+  // host included — that's the whole point of the setting, otherwise the
+  // host could just check the round summary and spoil their own reveal.
+  const suspenseActive =
+    game.hide_leaderboard_final_round && currentRound.is_final_round;
   const canSeeLeaderboard =
-    isHost ||
-    (game.show_live_leaderboard &&
-      !(game.hide_leaderboard_final_round && currentRound.is_final_round));
+    !suspenseActive && (isHost || game.show_live_leaderboard);
 
   async function nextRound(activePlayerId: string) {
     setAdvancing(true);

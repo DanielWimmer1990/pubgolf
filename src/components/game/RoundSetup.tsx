@@ -27,15 +27,15 @@ export function RoundSetup() {
   const [par, setPar] = useState<number | null>(null);
   const [ruleText, setRuleText] = useState("");
   const [rulePoints, setRulePoints] = useState(
-    () => game?.default_rule_points ?? -2
+    () => game?.default_rule_points ?? 2
   );
   const [minigameEnabled, setMinigameEnabled] = useState(false);
   const [minigameName, setMinigameName] = useState("");
   const [minigamePointsWinner, setMinigamePointsWinner] = useState(
-    () => game?.default_minigame_points_winner ?? 1
+    () => game?.default_minigame_points_winner ?? -1
   );
   const [minigamePointsLoser, setMinigamePointsLoser] = useState(
-    () => game?.default_minigame_points_loser ?? -1
+    () => game?.default_minigame_points_loser ?? 1
   );
   const [submitting, setSubmitting] = useState(false);
   const [goingBack, setGoingBack] = useState(false);

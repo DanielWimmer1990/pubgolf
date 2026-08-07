@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { ScoreProgressionChart } from "@/components/game/ScoreProgressionChart";
 import { ShareResultsButton } from "@/components/game/ShareResultsButton";
+import { ExportPages } from "@/components/game/ExportPages";
 import { useGame } from "@/hooks/useGame";
 import { cn } from "@/lib/utils";
 import type { Player } from "@/types/database";
@@ -67,7 +68,7 @@ export function FinalResults() {
     pointAdjustments,
   } = useGame();
   const presentation = game?.show_final_presentation ?? true;
-  const contentRef = useRef<HTMLDivElement>(null);
+  const pagesRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(false);
   const showResults = !presentation || revealed;
 
@@ -270,6 +271,25 @@ export function FinalResults() {
     return { maxRound, series };
   }, [rounds, roundDrinks, pointAdjustments, minigameResults, ruleViolations, players]);
 
+  const roundBreakdown = useMemo(() => {
+    return rounds
+      .filter((r) => r.status === "done")
+      .sort((a, b) => a.round_number - b.round_number)
+      .map((round) => ({
+        round,
+        cells: players.map((player) => {
+          const drink = roundDrinks.find(
+            (rd) => rd.round_id === round.id && rd.player_id === player.id
+          );
+          return {
+            player,
+            sips: drink?.sips ?? null,
+            points: drink?.points ?? null,
+          };
+        }),
+      }));
+  }, [rounds, players, roundDrinks]);
+
   const summary = useMemo(() => {
     if (leaderboard.length === 0) return null;
     const [winner, runnerUp] = leaderboard;
@@ -303,7 +323,16 @@ export function FinalResults() {
 
   return (
     <div className="w-full max-w-md space-y-8 py-6">
-      <div ref={contentRef} className="space-y-8">
+      <ExportPages
+        pagesRef={pagesRef}
+        gameName={game?.name || game?.code || "Pubgolf"}
+        leaderboard={leaderboard}
+        players={players}
+        funAwards={funAwards}
+        progression={progression}
+        roundBreakdown={roundBreakdown}
+      />
+      <div className="space-y-8">
         <div className="text-center space-y-1">
           <div className="text-6xl">🏁</div>
           <h1 className="font-heading text-4xl font-bold bg-gradient-to-r from-orange-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
@@ -357,8 +386,8 @@ export function FinalResults() {
                   <span
                     className={cn(
                       "text-lg font-bold tabular-nums",
-                      total > 0 && "text-emerald-500",
-                      total < 0 && "text-red-500"
+                      total < 0 && "text-emerald-500",
+                      total > 0 && "text-red-500"
                     )}
                   >
                     {total > 0 ? "+" : ""}
@@ -385,8 +414,8 @@ export function FinalResults() {
                   <span
                     className={cn(
                       "font-bold tabular-nums",
-                      total > 0 && "text-emerald-500",
-                      total < 0 && "text-red-500"
+                      total < 0 && "text-emerald-500",
+                      total > 0 && "text-red-500"
                     )}
                   >
                     {total > 0 ? "+" : ""}
@@ -456,7 +485,7 @@ export function FinalResults() {
       </div>
 
       <ShareResultsButton
-        targetRef={contentRef}
+        pagesRef={pagesRef}
         fileName={`pubgolf-${game?.code ?? "ergebnis"}.pdf`}
       />
 

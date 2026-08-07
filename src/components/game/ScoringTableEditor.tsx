@@ -27,8 +27,8 @@ export function ScoringTableEditor({
         <Label>Punkte-Regeln</Label>
         <p className="text-sm text-muted-foreground">
           Genau das gewürfelte PAR getroffen? 0 Punkte. Wer mehr Schlucke
-          braucht als gewürfelt, bekommt <span className="text-emerald-400 font-medium">Pluspunkte</span> —
-          wer weniger braucht, <span className="text-red-400 font-medium">Minuspunkte</span>. Nur der
+          braucht als gewürfelt, bekommt <span className="text-red-400 font-medium">Pluspunkte</span> —
+          wer weniger braucht, <span className="text-emerald-400 font-medium">Minuspunkte</span>. Nur der
           erste Schluck drüber/drunter ist einstellbar, jeder weitere zählt
           im gleichen Schritt weiter.
         </p>
@@ -51,8 +51,8 @@ export function ScoringTableEditor({
                 onChange={(v) => updatePoints(row.diff, v)}
                 className={cn(
                   "w-20 text-center font-semibold",
-                  row.points > 0 && "text-emerald-400",
-                  row.points < 0 && "text-red-400"
+                  row.points < 0 && "text-emerald-400",
+                  row.points > 0 && "text-red-400"
                 )}
               />
             )}

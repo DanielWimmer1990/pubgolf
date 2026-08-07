@@ -16,10 +16,13 @@ export function GameHeader() {
 
   if (!game) return null;
 
+  // Suspense for the final round hides the leaderboard from everyone,
+  // host included — that's the whole point of the setting, otherwise the
+  // host could just peek here and spoil their own reveal.
+  const suspenseActive =
+    game.hide_leaderboard_final_round && currentRound?.is_final_round;
   const canSeeLeaderboard =
-    isHost ||
-    (game.show_live_leaderboard &&
-      !(game.hide_leaderboard_final_round && currentRound?.is_final_round));
+    !suspenseActive && (isHost || game.show_live_leaderboard);
 
   async function endGame() {
     if (!window.confirm("Spiel wirklich beenden und Endergebnis zeigen?")) {

@@ -8,6 +8,7 @@ import { RoundLiveStatus } from "@/components/game/RoundLiveStatus";
 import { MinigameResultForm } from "@/components/game/MinigameResultForm";
 import { RuleViolationBox } from "@/components/game/RuleViolationBox";
 import { PenaltyAdjustmentBox } from "@/components/game/PenaltyAdjustmentBox";
+import { ExtraPointsBox } from "@/components/game/ExtraPointsBox";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 
@@ -76,6 +77,7 @@ export function RoundActive() {
       )}
       {isHost && <RuleViolationBox round={currentRound} />}
       {isHost && <PenaltyAdjustmentBox round={currentRound} />}
+      {isHost && <ExtraPointsBox round={currentRound} />}
 
       {isHost && (
         <div className="w-full max-w-md space-y-2">

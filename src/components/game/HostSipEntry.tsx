@@ -117,9 +117,9 @@ export function HostSipEntry({ round }: { round: Round }) {
                 className={
                   points === null
                     ? "w-10 text-right text-sm text-muted-foreground"
-                    : points > 0
-                    ? "w-10 text-right text-sm font-bold text-emerald-400"
                     : points < 0
+                    ? "w-10 text-right text-sm font-bold text-emerald-400"
+                    : points > 0
                     ? "w-10 text-right text-sm font-bold text-red-400"
                     : "w-10 text-right text-sm font-bold text-muted-foreground"
                 }

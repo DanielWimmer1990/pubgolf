@@ -38,8 +38,8 @@ export function Leaderboard({ compact = false }: { compact?: boolean }) {
             <span
               className={cn(
                 "font-bold tabular-nums",
-                total > 0 && "text-emerald-500",
-                total < 0 && "text-red-500"
+                total < 0 && "text-emerald-500",
+                total > 0 && "text-red-500"
               )}
             >
               {total > 0 ? "+" : ""}

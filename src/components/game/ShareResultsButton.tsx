@@ -2,40 +2,76 @@
 
 import { useState, type RefObject } from "react";
 import { toast } from "sonner";
-import { Download } from "lucide-react";
+import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function ShareResultsButton({
-  targetRef,
+  pagesRef,
   fileName,
 }: {
-  targetRef: RefObject<HTMLElement | null>;
+  pagesRef: RefObject<HTMLElement | null>;
   fileName: string;
 }) {
   const [exporting, setExporting] = useState(false);
 
   async function exportPdf() {
-    if (!targetRef.current) return;
+    if (!pagesRef.current) return;
     setExporting(true);
     try {
+      const pageEls = Array.from(
+        pagesRef.current.querySelectorAll<HTMLElement>("[data-export-page]")
+      );
+      if (pageEls.length === 0) return;
+
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
         import("html2canvas-pro"),
         import("jspdf"),
       ]);
 
-      const canvas = await html2canvas(targetRef.current, {
-        backgroundColor: "#0b0714",
-        scale: 2,
-      });
-      const imgData = canvas.toDataURL("image/png");
+      let pdf: InstanceType<typeof jsPDF> | null = null;
+      for (const pageEl of pageEls) {
+        const canvas = await html2canvas(pageEl, {
+          backgroundColor: "#0b0714",
+          scale: 2,
+        });
+        const imgData = canvas.toDataURL("image/png");
+        if (!pdf) {
+          pdf = new jsPDF({
+            orientation: "landscape",
+            unit: "px",
+            format: [canvas.width, canvas.height],
+          });
+        } else {
+          pdf.addPage([canvas.width, canvas.height], "landscape");
+        }
+        pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+      }
+      if (!pdf) return;
 
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "px",
-        format: [canvas.width, canvas.height],
-      });
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
       const blob = pdf.output("blob");
+      const file = new File([blob], fileName, { type: "application/pdf" });
+
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: "Pubgolf Ergebnis",
+            text: "Unser Pubgolf-Ergebnis!",
+          });
+          return;
+        } catch (shareErr) {
+          // AbortError = user closed the share sheet on purpose, nothing to do.
+          // Anything else (e.g. lost user-activation after the async capture,
+          // which mobile browsers are strict about) should fall through to
+          // the plain download below instead of silently doing nothing.
+          if (
+            shareErr instanceof DOMException &&
+            shareErr.name === "AbortError"
+          ) {
+            return;
+          }
+        }
+      }
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -63,8 +99,8 @@ export function ShareResultsButton({
       onClick={exportPdf}
       disabled={exporting}
     >
-      <Download className="h-4 w-4" />
-      {exporting ? "Erstelle PDF…" : "PDF herunterladen"}
+      <Share2 className="h-4 w-4" />
+      {exporting ? "Erstelle PDF…" : "Als PDF teilen"}
     </Button>
   );
 }

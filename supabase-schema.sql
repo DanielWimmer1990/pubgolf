@@ -18,9 +18,13 @@ create table games (
   finished_at                       timestamptz,
   header_image_url                  text,
   default_drink                     text,
-  default_rule_points               integer not null default -2,
-  default_minigame_points_winner    integer not null default 1,
-  default_minigame_points_loser     integer not null default -1,
+  -- Sign convention, kept consistent with sip scoring (over PAR = plus,
+  -- under PAR = minus) and penalty_types below: bad things (breaking a
+  -- rule, losing a minigame) give plus points, good things (winning) give
+  -- minus points.
+  default_rule_points               integer not null default 2,
+  default_minigame_points_winner    integer not null default -1,
+  default_minigame_points_loser     integer not null default 1,
   show_final_presentation           boolean not null default true,
   show_live_leaderboard             boolean not null default true,
   hide_leaderboard_final_round      boolean not null default false,
