@@ -12,10 +12,43 @@ import { cn } from "@/lib/utils";
 
 type Highlight = { emoji: string; text: string };
 
+function pick(options: string[]): string {
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+function withSign(points: number): string {
+  return `${points > 0 ? "+" : ""}${points}`;
+}
+
+const BEST_SIP_TEMPLATES = (name: string, points: number) => [
+  `${name} rockt die Runde mit ${withSign(points)} Punkten!`,
+  `${name} knallt sich mit ${withSign(points)} Punkten die Krone auf!`,
+  `${name} zieht allen mit ${withSign(points)} Punkten die Show!`,
+];
+
+const WORST_SIP_TEMPLATES = (name: string, points: number) => [
+  `${name} schleicht sich elegant mit ${withSign(points)} Punkten vorbei`,
+  `${name} ist der Minimalist der Runde (${withSign(points)})`,
+  `${name} trinkt wie ein Profi — nur ${withSign(points)} Punkte`,
+];
+
+const PENALTY_TEMPLATES = (name: string, label: string, points: number) => [
+  `${name} hat's übertrieben: ${label} (${withSign(points)})`,
+  `${name} kassiert eine Runde ${label} (${withSign(points)})`,
+  `${name} baut Mist: ${label} (${withSign(points)})`,
+];
+
+const MINIGAME_TEMPLATES = (name: string, game: string) => [
+  `${name} ist der Meister im "${game}"!`,
+  `${name} räumt bei "${game}" ab!`,
+  `${name} lässt niemandem eine Chance bei "${game}"!`,
+];
+
 export function RoundSummary() {
   const {
     game,
     currentRound,
+    activePlayer,
     players,
     roundDrinks,
     pointAdjustments,
@@ -46,9 +79,7 @@ export function RoundSummary() {
       if (bestPlayer) {
         items.push({
           emoji: "🏆",
-          text: `${bestPlayer.name} mit dem heftigsten Schluck (${
-            (best.points ?? 0) > 0 ? "+" : ""
-          }${best.points})`,
+          text: pick(BEST_SIP_TEMPLATES(bestPlayer.name, best.points ?? 0)),
         });
       }
       if (worst.player_id !== best.player_id) {
@@ -56,9 +87,9 @@ export function RoundSummary() {
         if (worstPlayer) {
           items.push({
             emoji: "🐌",
-            text: `${worstPlayer.name} am sparsamsten (${
-              (worst.points ?? 0) > 0 ? "+" : ""
-            }${worst.points})`,
+            text: pick(
+              WORST_SIP_TEMPLATES(worstPlayer.name, worst.points ?? 0)
+            ),
           });
         }
       }
@@ -71,23 +102,19 @@ export function RoundSummary() {
       if (!player) continue;
       items.push({
         emoji: "⚠️",
-        text: `${player.name}: ${pa.label} (${pa.points > 0 ? "+" : ""}${
-          pa.points
-        })`,
+        text: pick(PENALTY_TEMPLATES(player.name, pa.label, pa.points)),
       });
     }
 
     const winner = minigameResults.find(
       (mr) => mr.round_id === currentRound.id && mr.outcome === "winner"
     );
-    if (winner) {
+    if (winner && currentRound.minigame_name) {
       const player = playerById.get(winner.player_id);
       if (player) {
         items.push({
           emoji: "🎮",
-          text: `${player.name} gewinnt${
-            currentRound.minigame_name ? ` "${currentRound.minigame_name}"` : ""
-          }`,
+          text: pick(MINIGAME_TEMPLATES(player.name, currentRound.minigame_name)),
         });
       }
     }
@@ -188,7 +215,8 @@ export function RoundSummary() {
       )}
       <div className="text-center space-y-1">
         <h2 className="font-heading text-2xl font-bold">
-          Runde {currentRound.round_number} beendet
+          Runde {currentRound.round_number}
+          {activePlayer && ` · ${activePlayer.name}'s Bar`} beendet
         </h2>
         {currentRound.bar_name && (
           <p className="text-sm text-muted-foreground">
@@ -240,12 +268,7 @@ export function RoundSummary() {
               avatarEmoji={player.avatar_emoji}
               size="sm"
             />
-            <div className="flex-1">
-              <p className="font-medium leading-none">{player.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {drink?.sips ?? "–"} Schlucke
-              </p>
-            </div>
+            <span className="flex-1 truncate font-medium">{player.name}</span>
             <span
               className={
                 (drink?.points ?? 0) > 0

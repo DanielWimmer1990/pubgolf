@@ -46,9 +46,17 @@ export function ShareResultsButton({
             text: "Unser Pubgolf-Ergebnis!",
           });
           return;
-        } catch {
-          // user cancelled the share sheet — fall through to download
-          return;
+        } catch (shareErr) {
+          // AbortError = user closed the share sheet on purpose, nothing to do.
+          // Anything else (e.g. lost user-activation after the async capture,
+          // which mobile browsers are strict about) should fall through to
+          // the plain download below instead of silently doing nothing.
+          if (
+            shareErr instanceof DOMException &&
+            shareErr.name === "AbortError"
+          ) {
+            return;
+          }
         }
       }
 
@@ -56,8 +64,11 @@ export function ShareResultsButton({
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
+      document.body.appendChild(a);
       a.click();
+      a.remove();
       URL.revokeObjectURL(url);
+      toast.success("PDF heruntergeladen!");
     } catch (err) {
       console.error(err);
       toast.error("PDF konnte nicht erstellt werden.");

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type NumberInputProps = Omit<
   React.ComponentProps<typeof Input>,
@@ -16,11 +17,17 @@ type NumberInputProps = Omit<
  * Integer input that keeps the typed text local (so a lone "-" while
  * composing a negative number doesn't get reverted by the controlled
  * value), selects everything on focus so the numeric keypad can
- * overwrite in one go, and uses inputMode=numeric with a pattern that
- * includes "-" since many mobile numeric keypads for type="number"
- * otherwise omit the minus key entirely.
+ * overwrite in one go, and has a dedicated sign-toggle button — many
+ * mobile numeric keypads (esp. Android/Gboard for inputMode=numeric)
+ * simply have no "-" key at all, so typing a negative number isn't
+ * reliably possible without one.
  */
-export function NumberInput({ value, onChange, ...props }: NumberInputProps) {
+export function NumberInput({
+  value,
+  onChange,
+  className,
+  ...props
+}: NumberInputProps) {
   const [raw, setRaw] = useState(String(value));
   const [prevValue, setPrevValue] = useState(value);
 
@@ -32,25 +39,43 @@ export function NumberInput({ value, onChange, ...props }: NumberInputProps) {
     setRaw(String(value));
   }
 
+  function toggleSign() {
+    const next = -value;
+    setPrevValue(next);
+    setRaw(String(next));
+    onChange(next);
+  }
+
   return (
-    <Input
-      type="text"
-      inputMode="numeric"
-      pattern="-?[0-9]*"
-      value={raw}
-      onFocus={(e) => e.target.select()}
-      onChange={(e) => {
-        const next = e.target.value;
-        if (!/^-?[0-9]*$/.test(next)) return;
-        setRaw(next);
-        if (next !== "" && next !== "-") {
-          onChange(Number(next));
-        }
-      }}
-      onBlur={() => {
-        if (raw === "" || raw === "-") setRaw(String(value));
-      }}
-      {...props}
-    />
+    <div className="inline-flex items-center gap-1">
+      <button
+        type="button"
+        onClick={toggleSign}
+        aria-label="Vorzeichen umkehren"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/15 text-sm text-muted-foreground hover:bg-white/10"
+      >
+        ±
+      </button>
+      <Input
+        type="text"
+        inputMode="numeric"
+        pattern="-?[0-9]*"
+        value={raw}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => {
+          const next = e.target.value;
+          if (!/^-?[0-9]*$/.test(next)) return;
+          setRaw(next);
+          if (next !== "" && next !== "-") {
+            onChange(Number(next));
+          }
+        }}
+        onBlur={() => {
+          if (raw === "" || raw === "-") setRaw(String(value));
+        }}
+        className={cn(className)}
+        {...props}
+      />
+    </div>
   );
 }

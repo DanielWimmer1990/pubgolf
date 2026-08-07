@@ -12,9 +12,19 @@ import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 
 export function RoundActive() {
-  const { currentRound, isHost } = useGame();
+  const { currentRound, isHost, players, roundDrinks } = useGame();
   const [ending, setEnding] = useState(false);
   if (!currentRound) return null;
+
+  const reportedCount = players.filter((p) =>
+    roundDrinks.some(
+      (rd) =>
+        rd.round_id === currentRound.id &&
+        rd.player_id === p.id &&
+        rd.sips != null
+    )
+  ).length;
+  const allReported = reportedCount === players.length;
 
   async function endRound() {
     if (!currentRound) return;
@@ -61,14 +71,22 @@ export function RoundActive() {
       {isHost && <PenaltyAdjustmentBox round={currentRound} />}
 
       {isHost && (
-        <Button
-          size="lg"
-          className="w-full max-w-md text-base"
-          onClick={endRound}
-          disabled={ending}
-        >
-          {ending ? "Beende…" : "Runde beenden"}
-        </Button>
+        <div className="w-full max-w-md space-y-2">
+          <Button
+            size="lg"
+            className="w-full text-base"
+            onClick={endRound}
+            disabled={ending || !allReported}
+          >
+            {ending ? "Beende…" : "Runde beenden"}
+          </Button>
+          {!allReported && (
+            <p className="text-center text-xs text-muted-foreground">
+              Noch nicht alle Schlucke eingetragen ({reportedCount}/
+              {players.length})
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

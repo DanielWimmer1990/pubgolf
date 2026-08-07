@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { ScrollText, X } from "lucide-react";
+import { Minus, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
@@ -12,9 +12,7 @@ import type { Round } from "@/types/database";
 type PendingEntry = {
   id: string;
   ruleId: string;
-  ruleText: string;
   playerId: string;
-  playerName: string;
   points: number;
 };
 
@@ -22,6 +20,7 @@ export function RuleViolationBox({ round }: { round: Round }) {
   const { rules, ruleViolations, players, myPlayer } = useGame();
   const [pending, setPending] = useState<PendingEntry[]>([]);
   const [saving, setSaving] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   if (rules.length === 0) return null;
 
@@ -39,21 +38,38 @@ export function RuleViolationBox({ round }: { round: Round }) {
     return saved + queued;
   }
 
-  function addPending(
-    ruleId: string,
-    ruleText: string,
-    playerId: string,
-    playerName: string,
-    points: number
-  ) {
+  function increment(ruleId: string, playerId: string, points: number) {
     setPending((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), ruleId, ruleText, playerId, playerName, points },
+      { id: crypto.randomUUID(), ruleId, playerId, points },
     ]);
   }
 
-  function removePending(id: string) {
-    setPending((prev) => prev.filter((p) => p.id !== id));
+  async function decrement(ruleId: string, playerId: string) {
+    const lastPendingIdx = [...pending]
+      .reverse()
+      .findIndex((p) => p.ruleId === ruleId && p.playerId === playerId);
+    if (lastPendingIdx !== -1) {
+      const idx = pending.length - 1 - lastPendingIdx;
+      setPending((prev) => prev.filter((_, i) => i !== idx));
+      return;
+    }
+
+    const savedMatch = savedForRound
+      .filter((rv) => rv.rule_id === ruleId && rv.violator_player_id === playerId)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+    if (!savedMatch) return;
+
+    setRemovingId(savedMatch.id);
+    const { error } = await supabase
+      .from("rule_violations")
+      .delete()
+      .eq("id", savedMatch.id);
+    setRemovingId(null);
+    if (error) {
+      console.error(error);
+      toast.error("Konnte nicht entfernt werden.");
+    }
   }
 
   async function save() {
@@ -100,59 +116,40 @@ export function RuleViolationBox({ round }: { round: Round }) {
               {players.map((player) => {
                 const count = countFor(rule.id, player.id);
                 return (
-                  <button
-                    key={player.id}
-                    type="button"
-                    onClick={() =>
-                      addPending(
-                        rule.id,
-                        rule.text,
-                        player.id,
-                        player.name,
-                        rule.violation_points
-                      )
-                    }
-                    className={cn(
-                      "rounded-full border px-3 py-1.5 text-sm hover:border-primary/50 hover:bg-primary/10",
-                      count > 0
-                        ? "border-primary/60 bg-primary/10 text-primary"
-                        : "border-white/15"
+                  <div key={player.id} className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        increment(rule.id, player.id, rule.violation_points)
+                      }
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-sm hover:border-primary/50 hover:bg-primary/10",
+                        count > 0
+                          ? "border-primary/60 bg-primary/10 text-primary"
+                          : "border-white/15"
+                      )}
+                    >
+                      {player.name}
+                      {count > 0 && ` ×${count}`}
+                    </button>
+                    {count > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => decrement(rule.id, player.id)}
+                        disabled={removingId != null}
+                        aria-label={`Einen Eintrag für ${player.name} entfernen`}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground hover:bg-white/10 hover:text-red-400 disabled:opacity-50"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
                     )}
-                  >
-                    {player.name}
-                    {count > 0 && ` ×${count}`}
-                  </button>
+                  </div>
                 );
               })}
             </div>
           </li>
         ))}
       </ul>
-
-      {pending.length > 0 && (
-        <div className="space-y-1.5 border-t border-white/10 pt-3">
-          <p className="text-xs font-medium text-muted-foreground">
-            Neu ausgewählt
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {pending.map((tag) => (
-              <span
-                key={tag.id}
-                className="flex items-center gap-1 rounded-full border border-primary/50 bg-primary/10 px-2 py-0.5 text-[11px] text-primary"
-              >
-                {tag.playerName}: {tag.ruleText}
-                <button
-                  type="button"
-                  onClick={() => removePending(tag.id)}
-                  aria-label="Entfernen"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
 
       <Button
         className="w-full"
