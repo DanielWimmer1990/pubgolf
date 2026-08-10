@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { HowItWorksButton } from "@/components/game/HowItWorksButton";
 import { normalizeGameCode } from "@/lib/gameCode";
 import { getRecentGames, removeRecentGame } from "@/lib/recentGames";
 import { supabase } from "@/lib/supabase";
@@ -100,13 +101,14 @@ export default function HomePage() {
           zeigt, wer die Nacht gewinnt. Der Gastgeber hält die Fäden in der
           Hand, alle anderen fiebern live mit.
         </p>
+        <HowItWorksButton />
       </div>
 
       <div className="w-full max-w-xs">
         <Button
           asChild
           size="lg"
-          className="w-full text-base font-semibold shadow-[0_0_30px_-6px] shadow-primary"
+          className="h-auto w-full py-3.5 text-base font-semibold shadow-[0_0_30px_-6px] shadow-primary"
         >
           <a href="/create">Neues Spiel starten</a>
         </Button>
@@ -134,7 +136,7 @@ export default function HomePage() {
               type="submit"
               variant="secondary"
               size="lg"
-              className="w-full text-base"
+              className="h-auto w-full py-3.5 text-base"
               disabled={normalizeGameCode(code).length < 4}
             >
               Beitreten
@@ -145,7 +147,7 @@ export default function HomePage() {
             type="button"
             variant="secondary"
             size="lg"
-            className="w-full text-base"
+            className="h-auto w-full py-3.5 text-base"
             onClick={() => setShowJoin(true)}
           >
             Spiel beitreten
