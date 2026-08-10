@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { pointsKindLabel } from "@/lib/pointsLabel";
 import type { PenaltyType } from "@/types/database";
 
 const PENALTY_ICONS = [
@@ -109,57 +110,76 @@ export function PenaltyTypesEditor({
         {value.map((penalty) => (
           <div
             key={penalty.id}
-            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5"
+            className="space-y-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5"
           >
-            <IconPicker
-              value={penalty.icon}
-              onPick={(icon) => updateRow(penalty.id, { icon })}
-            />
-            <Input
-              value={penalty.name}
-              onChange={(e) => updateRow(penalty.id, { name: e.target.value })}
-              className="flex-1"
-            />
-            <NumberInput
-              value={penalty.points}
-              onChange={(v) => updateRow(penalty.id, { points: v })}
-              className="w-20 text-center"
-            />
-            <button
-              type="button"
-              onClick={() => removeRow(penalty.id)}
-              aria-label={`${penalty.name} entfernen`}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-red-400"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              <IconPicker
+                value={penalty.icon}
+                onPick={(icon) => updateRow(penalty.id, { icon })}
+              />
+              <Input
+                value={penalty.name}
+                onChange={(e) =>
+                  updateRow(penalty.id, { name: e.target.value })
+                }
+                className="min-w-0 flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => removeRow(penalty.id)}
+                aria-label={`${penalty.name} entfernen`}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-red-400"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-3 pl-1">
+              <span className="text-xs text-muted-foreground">
+                Punkte
+                {pointsKindLabel(penalty.points) &&
+                  ` · ${pointsKindLabel(penalty.points)}`}
+              </span>
+              <NumberInput
+                value={penalty.points}
+                onChange={(v) => updateRow(penalty.id, { points: v })}
+                className="w-20 text-center"
+              />
+            </div>
           </div>
         ))}
       </div>
 
-      <div className="flex items-center gap-2 border-t border-white/10 pt-4">
-        <IconPicker value={newIcon} onPick={setNewIcon} />
-        <Input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="Neue Strafe, z.B. Handy verloren"
-          className="flex-1"
-          maxLength={40}
-        />
-        <NumberInput
-          value={newPoints}
-          onChange={setNewPoints}
-          className="w-20 text-center"
-        />
-        <button
-          type="button"
-          onClick={addRow}
-          disabled={!newName.trim()}
-          aria-label="Strafe hinzufügen"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/40 text-primary hover:bg-primary/10 disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+      <div className="space-y-2 border-t border-white/10 pt-4">
+        <div className="flex items-center gap-2">
+          <IconPicker value={newIcon} onPick={setNewIcon} />
+          <Input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Neue Strafe, z.B. Handy verloren"
+            className="min-w-0 flex-1"
+            maxLength={40}
+          />
+          <button
+            type="button"
+            onClick={addRow}
+            disabled={!newName.trim()}
+            aria-label="Strafe hinzufügen"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/40 text-primary hover:bg-primary/10 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex items-center justify-between gap-3 pl-1">
+          <span className="text-xs text-muted-foreground">
+            Punkte
+            {pointsKindLabel(newPoints) && ` · ${pointsKindLabel(newPoints)}`}
+          </span>
+          <NumberInput
+            value={newPoints}
+            onChange={setNewPoints}
+            className="w-20 text-center"
+          />
+        </div>
       </div>
     </div>
   );

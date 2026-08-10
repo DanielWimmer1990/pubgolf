@@ -7,6 +7,7 @@ import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { pointsKindLabel } from "@/lib/pointsLabel";
 import type { MinigameOutcome, Round } from "@/types/database";
 
 const OUTCOME_LABEL: Record<MinigameOutcome, string> = {
@@ -77,13 +78,17 @@ export function MinigameResultForm({ round }: { round: Round }) {
     <div className="w-full max-w-md space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
       <div>
         <p className="font-heading font-semibold">
-          🎲 {round.minigame_name}
+          🎲 Minispiel: {round.minigame_name}
         </p>
         <p className="text-xs text-muted-foreground">
           Gewinner {round.minigame_points_winner! > 0 ? "+" : ""}
-          {round.minigame_points_winner} · Verlierer{" "}
-          {round.minigame_points_loser! > 0 ? "+" : ""}
-          {round.minigame_points_loser} Punkte
+          {round.minigame_points_winner}
+          {pointsKindLabel(round.minigame_points_winner ?? 0) &&
+            ` (${pointsKindLabel(round.minigame_points_winner ?? 0)})`}{" "}
+          · Verlierer {round.minigame_points_loser! > 0 ? "+" : ""}
+          {round.minigame_points_loser}
+          {pointsKindLabel(round.minigame_points_loser ?? 0) &&
+            ` (${pointsKindLabel(round.minigame_points_loser ?? 0)})`}
         </p>
       </div>
 

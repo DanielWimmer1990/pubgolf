@@ -26,16 +26,29 @@ function joinNames(names: string[]): string {
   return `${names.slice(0, -1).join(", ")} und ${names[names.length - 1]}`;
 }
 
+// "Bester Schluck": needed the most extra sips over PAR — a heroic,
+// drawn-out struggle. Strafpunkte (plus), described concretely so it's
+// clear what actually happened, not just an abstract label.
 const BEST_SIP_TEMPLATES = (name: string, points: number) => [
-  `${name} rockt die Runde mit ${withSign(points)} Punkten!`,
-  `${name} knallt sich mit ${withSign(points)} Punkten die Krone auf!`,
-  `${name} zieht allen mit ${withSign(points)} Punkten die Show!`,
+  `${name} braucht ordentlich Anlauf und kämpft sich durch (${withSign(
+    points
+  )} Strafpunkte)`,
+  `${name} verschluckt sich fast, schafft's aber am Ende (${withSign(
+    points
+  )} Strafpunkte)`,
+  `${name} zieht die Show ordentlich in die Länge (${withSign(
+    points
+  )} Strafpunkte)`,
 ];
 
+// "Langsamster Schluck": finished in way fewer sips than rolled — quick
+// and efficient. Gutpunkte (minus).
 const WORST_SIP_TEMPLATES = (name: string, points: number) => [
-  `${name} schleicht sich elegant mit ${withSign(points)} Punkten vorbei`,
-  `${name} ist der Minimalist der Runde (${withSign(points)})`,
-  `${name} trinkt wie ein Profi — nur ${withSign(points)} Punkte`,
+  `${name} zieht's in Rekordzeit durch (${withSign(points)} Gutpunkte)`,
+  `${name} macht kurzen Prozess mit dem Glas (${withSign(points)} Gutpunkte)`,
+  `${name} spart sich locker ein paar Schlucke (${withSign(
+    points
+  )} Gutpunkte)`,
 ];
 
 const PENALTY_TEMPLATES = (name: string, label: string, points: number) => [
@@ -202,7 +215,6 @@ export function RoundSummary() {
   }
 
   async function endGame() {
-    if (!window.confirm("Spiel beenden und Endergebnis zeigen?")) return;
     setEnding(true);
     const { error } = await supabase
       .from("games")

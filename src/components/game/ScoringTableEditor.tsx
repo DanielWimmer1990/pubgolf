@@ -2,6 +2,7 @@ import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import type { ScoringTable } from "@/types/database";
 import { diffLabel } from "@/lib/scoring";
+import { pointsKindLabel } from "@/lib/pointsLabel";
 import { cn } from "@/lib/utils";
 
 type ScoringTableEditorProps = {
@@ -46,15 +47,22 @@ export function ScoringTableEditor({
                 0
               </span>
             ) : (
-              <NumberInput
-                value={row.points}
-                onChange={(v) => updatePoints(row.diff, v)}
-                className={cn(
-                  "w-20 text-center font-semibold",
-                  row.points < 0 && "text-emerald-400",
-                  row.points > 0 && "text-red-400"
+              <div className="flex items-center gap-2">
+                {pointsKindLabel(row.points) && (
+                  <span className="text-xs text-muted-foreground">
+                    {pointsKindLabel(row.points)}
+                  </span>
                 )}
-              />
+                <NumberInput
+                  value={row.points}
+                  onChange={(v) => updatePoints(row.diff, v)}
+                  className={cn(
+                    "w-20 text-center font-semibold",
+                    row.points < 0 && "text-emerald-400",
+                    row.points > 0 && "text-red-400"
+                  )}
+                />
+              </div>
             )}
           </div>
         ))}

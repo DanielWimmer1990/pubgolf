@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { DiceRoller } from "@/components/game/DiceRoller";
+import { InfoButton } from "@/components/game/InfoButton";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
+import { pointsKindLabel } from "@/lib/pointsLabel";
 import {
   getRecentRuleTexts,
   getRecentMinigameNames,
@@ -29,7 +30,7 @@ export function RoundSetup() {
   const [rulePoints, setRulePoints] = useState(
     () => game?.default_rule_points ?? 2
   );
-  const [minigameEnabled, setMinigameEnabled] = useState(false);
+  const [minigameEnabled, setMinigameEnabled] = useState(true);
   const [minigameName, setMinigameName] = useState("");
   const [minigamePointsWinner, setMinigamePointsWinner] = useState(
     () => game?.default_minigame_points_winner ?? -1
@@ -210,6 +211,13 @@ export function RoundSetup() {
         <Label htmlFor="rule-text" className="flex items-center gap-1.5">
           <ScrollText className="h-4 w-4 text-primary" />
           Neue Regel für den Rest des Spiels
+          <InfoButton title="Neue Regel">
+            Der aktive Spieler legt eine neue Regel fest, die ab sofort für
+            den Rest des Spiels gilt (z.&nbsp;B. &bdquo;Nicht mit links
+            trinken&ldquo;). Bricht jemand die Regel, kannst du das jederzeit
+            im Spiel eintragen — dafür gibt es die hier festgelegten
+            Strafpunkte. Regeln bleiben aktiv, auch über diese Runde hinaus.
+          </InfoButton>
         </Label>
         <Input
           id="rule-text"
@@ -230,28 +238,34 @@ export function RoundSetup() {
           <Label htmlFor="rule-points" className="text-sm text-muted-foreground">
             Punkte bei Regelbruch
           </Label>
-          <NumberInput
-            id="rule-points"
-            value={rulePoints}
-            onChange={setRulePoints}
-            className="w-20 text-center"
-          />
+          <div className="flex items-center gap-2">
+            {pointsKindLabel(rulePoints) && (
+              <span className="text-xs text-muted-foreground">
+                {pointsKindLabel(rulePoints)}
+              </span>
+            )}
+            <NumberInput
+              id="rule-points"
+              value={rulePoints}
+              onChange={setRulePoints}
+              className="w-20 text-center"
+            />
+          </div>
         </div>
       </div>
 
       <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="minigame-toggle" className="flex items-center gap-1.5">
-            <Dices className="h-4 w-4 text-primary" />
-            Minispiel ausrufen
-          </Label>
-          <Switch
-            id="minigame-toggle"
-            checked={minigameEnabled}
-            onCheckedChange={setMinigameEnabled}
-          />
-        </div>
-        {minigameEnabled && (
+        <Label className="flex items-center gap-1.5">
+          <Dices className="h-4 w-4 text-primary" />
+          Minispiel
+          <InfoButton title="Minispiel">
+            Ein kleines Duell oder eine Challenge für diese Runde (z.&nbsp;B.
+            Armdrücken, Schere-Stein-Papier). Gewinner und Verlierer bekommen
+            die hier festgelegten Punkte. Falls diese Runde kein Minispiel
+            stattfinden soll, kannst du es unten überspringen.
+          </InfoButton>
+        </Label>
+        {minigameEnabled ? (
           <div className="space-y-3">
             <Input
               list="minigame-suggestions"
@@ -271,6 +285,8 @@ export function RoundSetup() {
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">
                   Punkte Gewinner
+                  {pointsKindLabel(minigamePointsWinner) &&
+                    ` · ${pointsKindLabel(minigamePointsWinner)}`}
                 </Label>
                 <NumberInput
                   value={minigamePointsWinner}
@@ -280,6 +296,8 @@ export function RoundSetup() {
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">
                   Punkte Verlierer
+                  {pointsKindLabel(minigamePointsLoser) &&
+                    ` · ${pointsKindLabel(minigamePointsLoser)}`}
                 </Label>
                 <NumberInput
                   value={minigamePointsLoser}
@@ -287,6 +305,30 @@ export function RoundSetup() {
                 />
               </div>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full text-muted-foreground"
+              onClick={() => setMinigameEnabled(false)}
+            >
+              Diese Runde kein Minispiel
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Kein Minispiel diese Runde.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-primary/40"
+              onClick={() => setMinigameEnabled(true)}
+            >
+              Doch ausrufen
+            </Button>
           </div>
         )}
       </div>

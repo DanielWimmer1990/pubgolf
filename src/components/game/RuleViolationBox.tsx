@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { pointsKindLabel } from "@/lib/pointsLabel";
 import type { Round } from "@/types/database";
 
 type PendingEntry = {
@@ -118,7 +119,10 @@ export function RuleViolationBox({ round }: { round: Round }) {
               {rule.text}{" "}
               <span className="text-muted-foreground">
                 ({rule.violation_points > 0 ? "+" : ""}
-                {rule.violation_points})
+                {rule.violation_points}
+                {pointsKindLabel(rule.violation_points) &&
+                  ` ${pointsKindLabel(rule.violation_points)}`}
+                )
               </span>
             </p>
             <div className="flex flex-wrap gap-2">

@@ -9,6 +9,7 @@ import { NumberInput } from "@/components/ui/number-input";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { pointsKindLabel } from "@/lib/pointsLabel";
 import type { Round } from "@/types/database";
 
 export function ExtraPointsBox({ round }: { round: Round }) {
@@ -83,7 +84,10 @@ export function ExtraPointsBox({ round }: { round: Round }) {
       />
 
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">Punkte</span>
+        <span className="text-sm text-muted-foreground">
+          Punkte
+          {pointsKindLabel(points) && ` · ${pointsKindLabel(points)}`}
+        </span>
         <NumberInput
           value={points}
           onChange={setPoints}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { pointsKindLabel } from "@/lib/pointsLabel";
 import type { Round } from "@/types/database";
 
 type PendingEntry = {
@@ -118,7 +119,10 @@ export function PenaltyAdjustmentBox({ round }: { round: Round }) {
               {penalty.name}{" "}
               <span className="text-muted-foreground">
                 ({penalty.points > 0 ? "+" : ""}
-                {penalty.points})
+                {penalty.points}
+                {pointsKindLabel(penalty.points) &&
+                  ` ${pointsKindLabel(penalty.points)}`}
+                )
               </span>
             </p>
             <div className="flex flex-wrap gap-2">
