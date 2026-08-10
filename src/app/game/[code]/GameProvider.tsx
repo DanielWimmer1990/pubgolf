@@ -365,9 +365,11 @@ export function GameProvider({
     for (const pa of state.pointAdjustments) {
       totals.set(pa.player_id, (totals.get(pa.player_id) ?? 0) + pa.points);
     }
+    // Golf-style scoring: lowest total wins (Gutpunkte/minus is the good
+    // direction, Strafpunkte/plus is the bad direction — see pointsLabel.ts).
     const leaderboard: LeaderboardEntry[] = players
       .map((player) => ({ player, total: totals.get(player.id) ?? 0 }))
-      .sort((a, b) => b.total - a.total);
+      .sort((a, b) => a.total - b.total);
 
     const { playerId } = getStoredIdentity(code);
     const myPlayer = players.find((p) => p.id === playerId) ?? null;

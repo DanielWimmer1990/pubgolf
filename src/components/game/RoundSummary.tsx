@@ -265,6 +265,13 @@ export function RoundSummary() {
         </div>
       )}
 
+      {suspenseActive && (
+        <p className="text-center text-xs text-muted-foreground">
+          🤫 Die Rangliste bleibt geheim — die Auflösung gibt es im
+          Endergebnis, sobald das Spiel beendet ist.
+        </p>
+      )}
+
       {highlights.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">
@@ -282,6 +289,12 @@ export function RoundSummary() {
             ))}
           </ul>
         </div>
+      )}
+
+      {isLastBaseRound && (
+        <p className="text-center text-xs font-semibold uppercase tracking-wide text-primary">
+          🏁 Letzte Runde
+        </p>
       )}
 
       {!isHost && (

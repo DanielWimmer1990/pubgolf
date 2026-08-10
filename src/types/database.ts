@@ -119,3 +119,15 @@ export type PointAdjustment = {
   points: number;
   created_by_player_id: string;
 };
+
+export type RuleTemplate = {
+  id: string;
+  created_at: string;
+  text: string;
+};
+
+export type MinigameTemplate = {
+  id: string;
+  created_at: string;
+  name: string;
+};

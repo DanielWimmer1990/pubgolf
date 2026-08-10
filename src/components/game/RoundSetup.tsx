@@ -48,6 +48,28 @@ export function RoundSetup() {
       setRecentRules(getRecentRuleTexts());
       setRecentMinigames(getRecentMinigameNames());
     });
+    supabase
+      .from("rule_templates")
+      .select("text")
+      .order("text")
+      .then(({ data }) => {
+        if (!data) return;
+        setRecentRules((prev) => {
+          const merged = [...prev, ...data.map((r) => r.text)];
+          return [...new Set(merged)];
+        });
+      });
+    supabase
+      .from("minigame_templates")
+      .select("name")
+      .order("name")
+      .then(({ data }) => {
+        if (!data) return;
+        setRecentMinigames((prev) => {
+          const merged = [...prev, ...data.map((m) => m.name)];
+          return [...new Set(merged)];
+        });
+      });
   }, []);
 
   if (!currentRound || !game) return null;
@@ -99,8 +121,23 @@ export function RoundSetup() {
       if (roundError) throw roundError;
 
       trackRuleText(ruleText);
+      supabase
+        .from("rule_templates")
+        .upsert({ text: ruleText.trim() }, { onConflict: "text", ignoreDuplicates: true })
+        .then(({ error: templateError }) => {
+          if (templateError) console.error(templateError);
+        });
       if (minigameEnabled && minigameName.trim()) {
         trackMinigameName(minigameName);
+        supabase
+          .from("minigame_templates")
+          .upsert(
+            { name: minigameName.trim() },
+            { onConflict: "name", ignoreDuplicates: true }
+          )
+          .then(({ error: templateError }) => {
+            if (templateError) console.error(templateError);
+          });
       }
     } catch (err) {
       console.error(err);

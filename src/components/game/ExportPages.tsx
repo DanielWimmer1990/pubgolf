@@ -46,6 +46,32 @@ function PageShell({
   );
 }
 
+const SLOGAN_TEMPLATES = (
+  winnerName: string | undefined,
+  roundCount: number,
+  playerCount: number
+) => [
+  `${playerCount} Spieler betraten die Bars. Nur ${
+    winnerName ?? "einer"
+  } verließ sie als Champion.`,
+  `${roundCount} Runden, ${playerCount} Legenden, null Reue.`,
+  `Wo PAR nur eine Empfehlung war.`,
+  winnerName
+    ? `${winnerName} trinkt. ${winnerName} gewinnt. So einfach ist das.`
+    : `Getrunken wurde hart, gewonnen noch härter.`,
+  `Schlag für Schlag, Schluck für Schluck — diese Nacht wird Geschichte.`,
+  `Beweismaterial für die nächste Ausrede beim Arzt.`,
+];
+
+function generateSlogan(
+  winnerName: string | undefined,
+  roundCount: number,
+  playerCount: number
+): string {
+  const options = SLOGAN_TEMPLATES(winnerName, roundCount, playerCount);
+  return options[Math.floor(Math.random() * options.length)];
+}
+
 function PointsSpan({ total }: { total: number }) {
   return (
     <span
@@ -78,13 +104,38 @@ export function ExportPages({
   roundBreakdown: RoundBreakdownRow[];
   pagesRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  const slogan = generateSlogan(
+    leaderboard[0]?.player.name,
+    roundBreakdown.length,
+    players.length
+  );
+
   return (
     <div
       ref={pagesRef}
       style={{ position: "fixed", top: 0, left: -99999 }}
       aria-hidden
     >
-      {/* Page 1 — Finale Tabelle */}
+      {/* Page 1 — Cover */}
+      <div data-export-page="cover">
+        <div
+          style={{ width: PAGE_W, height: PAGE_H }}
+          className="flex flex-col items-center justify-center gap-6 bg-background px-16 text-center"
+        >
+          <div className="text-7xl">⛳🍺</div>
+          <h1 className="font-heading text-6xl font-bold bg-gradient-to-r from-orange-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
+            {gameName}
+          </h1>
+          <p className="max-w-2xl font-heading text-2xl font-medium text-foreground/90">
+            {slogan}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {roundBreakdown.length} Runden · {players.length} Spieler
+          </p>
+        </div>
+      </div>
+
+      {/* Page 2 — Finale Tabelle */}
       <div data-export-page="standings">
         <PageShell title="Endstand" subtitle={gameName}>
           <div className="flex h-full flex-col justify-center gap-3">
@@ -115,7 +166,7 @@ export function ExportPages({
         </PageShell>
       </div>
 
-      {/* Page 2 — Punkteverlauf */}
+      {/* Page 3 — Punkteverlauf */}
       <div data-export-page="chart">
         <PageShell title="Punkteverlauf" subtitle={gameName}>
           <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-10">
@@ -130,7 +181,7 @@ export function ExportPages({
         </PageShell>
       </div>
 
-      {/* Page 3 — Fun Awards */}
+      {/* Page 4 — Fun Awards */}
       <div data-export-page="awards">
         <PageShell title="Fun Awards" subtitle={gameName}>
           <div className="grid h-full grid-cols-2 gap-4 content-center">
@@ -158,7 +209,7 @@ export function ExportPages({
         </PageShell>
       </div>
 
-      {/* Page 4 — Rundenergebnisse */}
+      {/* Page 5 — Rundenergebnisse */}
       <div data-export-page="rounds">
         <PageShell title="Rundenergebnisse" subtitle={gameName}>
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">

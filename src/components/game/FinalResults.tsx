@@ -108,8 +108,10 @@ export function FinalResults() {
 
     const scoredDrinks = roundDrinks.filter((rd) => rd.points != null);
     if (scoredDrinks.length > 0) {
+      // Golf-style: the most negative (most Gutpunkte) sip is the best one,
+      // the most positive (most Strafpunkte) is the roughest.
       const best = scoredDrinks.reduce((a, b) =>
-        (b.points ?? 0) > (a.points ?? 0) ? b : a
+        (b.points ?? 0) < (a.points ?? 0) ? b : a
       );
       const bestPlayer = playerById.get(best.player_id);
       const bestRound = rounds.find((r) => r.id === best.round_id);
@@ -125,7 +127,7 @@ export function FinalResults() {
       }
 
       const worst = scoredDrinks.reduce((a, b) =>
-        (b.points ?? 0) < (a.points ?? 0) ? b : a
+        (b.points ?? 0) > (a.points ?? 0) ? b : a
       );
       const worstPlayer = playerById.get(worst.player_id);
       const worstRound = rounds.find((r) => r.id === worst.round_id);
@@ -293,7 +295,9 @@ export function FinalResults() {
   const summary = useMemo(() => {
     if (leaderboard.length === 0) return null;
     const [winner, runnerUp] = leaderboard;
-    const margin = runnerUp ? winner.total - runnerUp.total : null;
+    // Golf-style: winner has the lowest total, so the lead is how far
+    // behind the runner-up is.
+    const margin = runnerUp ? runnerUp.total - winner.total : null;
     const sentences: string[] = [];
     sentences.push(
       `${winner.player.name} gewinnt mit ${winner.total > 0 ? "+" : ""}${
