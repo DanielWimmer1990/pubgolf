@@ -335,6 +335,7 @@ export function RoundSetup() {
           value={ruleText}
           onChange={setRuleText}
           suggestions={recentRules}
+          browseLabel="Wähle aus den besten Regeln aus"
           placeholder="z.B. Kein Ja und Nein mehr sagen"
           maxLength={140}
         />
@@ -382,6 +383,7 @@ export function RoundSetup() {
               value={minigameName}
               onChange={setMinigameName}
               suggestions={recentMinigames}
+              browseLabel="Wähle aus den besten Minispielen aus"
               placeholder="z.B. Schere Stein Papier"
               maxLength={60}
             />
