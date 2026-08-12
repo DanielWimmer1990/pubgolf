@@ -44,9 +44,20 @@ export function SuggestionInput({
   useEffect(() => {
     if (!open) return;
     function handlePointerDown(e: MouseEvent) {
-      if (!containerRef.current?.contains(e.target as Node)) {
-        setOpen(false);
+      const target = e.target as HTMLElement;
+      if (containerRef.current?.contains(target)) return;
+      // The "i" explanation dialog is rendered in a portal straight onto
+      // <body>, so it's not inside containerRef in the DOM even though
+      // it's logically part of this dropdown — don't treat clicks in it
+      // (including its close button) as "clicked outside".
+      if (
+        target.closest(
+          '[data-slot="dialog-overlay"], [data-slot="dialog-content"]'
+        )
+      ) {
+        return;
       }
+      setOpen(false);
     }
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
