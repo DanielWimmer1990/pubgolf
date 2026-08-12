@@ -64,6 +64,7 @@ export type Round = {
   minigame_name: string | null;
   minigame_points_winner: number | null;
   minigame_points_loser: number | null;
+  minigame_description: string | null;
   is_final_round: boolean;
   draft_rule_text: string | null;
   draft_rule_points: number | null;
@@ -87,6 +88,7 @@ export type Rule = {
   created_by_player_id: string;
   text: string;
   violation_points: number;
+  description: string | null;
 };
 
 export type RuleViolation = {

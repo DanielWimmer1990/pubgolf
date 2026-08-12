@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
+import { InfoButton } from "@/components/game/InfoButton";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -77,8 +78,13 @@ export function MinigameResultForm({ round }: { round: Round }) {
   return (
     <div className="w-full max-w-md space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
       <div>
-        <p className="font-heading font-semibold">
+        <p className="flex items-center gap-1 font-heading font-semibold">
           🎲 Minispiel: {round.minigame_name}
+          {round.minigame_description && (
+            <InfoButton title={round.minigame_name}>
+              {round.minigame_description}
+            </InfoButton>
+          )}
         </p>
         <p className="text-xs text-muted-foreground">
           Gewinner {round.minigame_points_winner! > 0 ? "+" : ""}

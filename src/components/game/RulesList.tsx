@@ -13,6 +13,7 @@ import {
   DrawerClose,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import { InfoButton } from "@/components/game/InfoButton";
 import { ReportViolationModal } from "@/components/game/ReportViolationModal";
 import { useGame } from "@/hooks/useGame";
 import type { Rule } from "@/types/database";
@@ -57,7 +58,14 @@ export function RulesList() {
                 className="flex items-center gap-2 rounded-lg border p-3"
               >
                 <div className="flex-1">
-                  <p className="text-sm font-medium">{rule.text}</p>
+                  <p className="flex items-center gap-1 text-sm font-medium">
+                    {rule.text}
+                    {rule.description && (
+                      <InfoButton title={rule.text}>
+                        {rule.description}
+                      </InfoButton>
+                    )}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     von {playerName(rule.created_by_player_id)} ·{" "}
                     {rule.violation_points > 0 ? "+" : ""}

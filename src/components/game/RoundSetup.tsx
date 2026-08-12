@@ -146,12 +146,27 @@ export function RoundSetup() {
     if (!canStart || !currentRound) return;
     setSubmitting(true);
     try {
+      // Carry the curated explanation along so the live "Aktive Regeln"
+      // list and Minispiel card can show it too, not just here in setup.
+      const ruleDescription =
+        recentRules.find(
+          (s) => s.value.toLowerCase() === ruleText.trim().toLowerCase()
+        )?.description ?? null;
+      const minigameDescription =
+        recentMinigames.find(
+          (s) => s.value.toLowerCase() === minigameName.trim().toLowerCase()
+        )?.description ?? null;
+
       // Editing an already-configured round (host went back from active
       // setup) updates the existing rule instead of inserting a duplicate.
       if (existingRule) {
         const { error: ruleError } = await supabase
           .from("rules")
-          .update({ text: ruleText.trim(), violation_points: rulePoints })
+          .update({
+            text: ruleText.trim(),
+            violation_points: rulePoints,
+            description: ruleDescription,
+          })
           .eq("id", existingRule.id);
         if (ruleError) throw ruleError;
       } else {
@@ -163,6 +178,7 @@ export function RoundSetup() {
             created_by_player_id: currentRound.active_player_id,
             text: ruleText.trim(),
             violation_points: rulePoints,
+            description: ruleDescription,
           })
           .select()
           .single();
@@ -183,6 +199,7 @@ export function RoundSetup() {
           minigame_name: minigameEnabled ? minigameName.trim() || null : null,
           minigame_points_winner: minigameEnabled ? minigamePointsWinner : null,
           minigame_points_loser: minigameEnabled ? minigamePointsLoser : null,
+          minigame_description: minigameEnabled ? minigameDescription : null,
           is_final_round: isFinalRound,
         })
         .eq("id", currentRound.id);
@@ -423,6 +440,16 @@ export function RoundSetup() {
                 />
               </div>
             </div>
+            {minigamePointsWinner !== 0 &&
+              minigamePointsLoser !== 0 &&
+              Math.sign(minigamePointsWinner) ===
+                Math.sign(minigamePointsLoser) && (
+                <p className="text-xs text-amber-400">
+                  ⚠️ Gewinner und Verlierer bekommen beide{" "}
+                  {pointsKindLabel(minigamePointsWinner)} — meist sollte der
+                  Gewinner Gutpunkte und der Verlierer Strafpunkte bekommen.
+                </p>
+              )}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

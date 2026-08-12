@@ -31,14 +31,12 @@ export function SuggestionInput({
 
   const filtered = useMemo(() => {
     const query = value.trim().toLowerCase();
-    // Browsing is opt-in (via the button below), so show the full curated
-    // list rather than truncating it — the user asked to see everything.
+    // Browsing is opt-in (via the button below) and should always offer
+    // the full list — including the currently selected value — so
+    // changing your mind after picking something doesn't leave you
+    // staring at an apparently-empty (but still "open") list.
     if (!query) return suggestions;
-    return suggestions.filter(
-      (s) =>
-        s.value.toLowerCase().includes(query) &&
-        s.value.toLowerCase() !== query
-    );
+    return suggestions.filter((s) => s.value.toLowerCase().includes(query));
   }, [value, suggestions]);
 
   // Only ever opens when the user explicitly asks for it (via the "browse"
