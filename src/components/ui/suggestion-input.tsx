@@ -31,14 +31,14 @@ export function SuggestionInput({
 
   const filtered = useMemo(() => {
     const query = value.trim().toLowerCase();
-    const pool = query
-      ? suggestions.filter(
-          (s) =>
-            s.value.toLowerCase().includes(query) &&
-            s.value.toLowerCase() !== query
-        )
-      : suggestions;
-    return pool.slice(0, 8);
+    // Browsing is opt-in (via the button below), so show the full curated
+    // list rather than truncating it — the user asked to see everything.
+    if (!query) return suggestions;
+    return suggestions.filter(
+      (s) =>
+        s.value.toLowerCase().includes(query) &&
+        s.value.toLowerCase() !== query
+    );
   }, [value, suggestions]);
 
   // Only ever opens when the user explicitly asks for it (via the "browse"

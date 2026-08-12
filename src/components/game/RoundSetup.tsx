@@ -17,28 +17,6 @@ import { InfoButton } from "@/components/game/InfoButton";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { pointsKindLabel } from "@/lib/pointsLabel";
-import {
-  getRecentRuleTexts,
-  getRecentMinigameNames,
-  trackRuleText,
-  trackMinigameName,
-} from "@/lib/roundHistory";
-
-function mergeSuggestions(
-  prev: Suggestion[],
-  incoming: Suggestion[]
-): Suggestion[] {
-  const byValue = new Map(prev.map((s) => [s.value.toLowerCase(), s]));
-  for (const s of incoming) {
-    const key = s.value.toLowerCase();
-    const existing = byValue.get(key);
-    // Prefer whichever entry actually has a description.
-    if (!existing || (!existing.description && s.description)) {
-      byValue.set(key, s);
-    }
-  }
-  return [...byValue.values()];
-}
 
 export function RoundSetup() {
   const { game, currentRound, activePlayer, players, rounds, rules } =
@@ -83,32 +61,18 @@ export function RoundSetup() {
   const [recentRules, setRecentRules] = useState<Suggestion[]>([]);
   const [recentMinigames, setRecentMinigames] = useState<Suggestion[]>([]);
 
+  // Curated suggestions only — no per-device history mixed in, so the
+  // dropdown stays a clean, admin-reviewed list instead of accumulating
+  // stray one-off text typed on someone's phone.
   useEffect(() => {
-    queueMicrotask(() => {
-      setRecentRules((prev) =>
-        mergeSuggestions(
-          prev,
-          getRecentRuleTexts().map((value) => ({ value }))
-        )
-      );
-      setRecentMinigames((prev) =>
-        mergeSuggestions(
-          prev,
-          getRecentMinigameNames().map((value) => ({ value }))
-        )
-      );
-    });
     supabase
       .from("rule_templates")
       .select("text, description")
       .order("text")
       .then(({ data }) => {
         if (!data) return;
-        setRecentRules((prev) =>
-          mergeSuggestions(
-            prev,
-            data.map((r) => ({ value: r.text, description: r.description }))
-          )
+        setRecentRules(
+          data.map((r) => ({ value: r.text, description: r.description }))
         );
       });
     supabase
@@ -117,11 +81,8 @@ export function RoundSetup() {
       .order("name")
       .then(({ data }) => {
         if (!data) return;
-        setRecentMinigames((prev) =>
-          mergeSuggestions(
-            prev,
-            data.map((m) => ({ value: m.name, description: m.description }))
-          )
+        setRecentMinigames(
+          data.map((m) => ({ value: m.name, description: m.description }))
         );
       });
   }, []);
@@ -235,7 +196,6 @@ export function RoundSetup() {
       const isKnownRule = recentRules.some(
         (s) => s.value.toLowerCase() === trimmedRule.toLowerCase()
       );
-      trackRuleText(ruleText);
       if (!isKnownRule) {
         supabase
           .from("rule_submissions")
@@ -253,7 +213,6 @@ export function RoundSetup() {
         const isKnownMinigame = recentMinigames.some(
           (s) => s.value.toLowerCase() === trimmedMinigame.toLowerCase()
         );
-        trackMinigameName(minigameName);
         if (!isKnownMinigame) {
           supabase
             .from("minigame_submissions")
