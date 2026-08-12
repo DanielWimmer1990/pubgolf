@@ -216,6 +216,39 @@ insert into minigame_templates (name, description) values
   ('Finger-Falle', 'Zwei Spieler zeigen gleichzeitig 1–5 Finger und nennen gleichzeitig die erwartete Gesamtsumme. Wer die Summe exakt trifft, gewinnt.')
 on conflict (name) do update set description = excluded.description;
 
+-- ── RULE_SUBMISSIONS / MINIGAME_SUBMISSIONS ─────────────────────────────────
+-- Freely-typed custom rules/minigames don't join the curated dropdown pool
+-- automatically (that let junk creep into the shared suggestion list).
+-- Instead they land here for the host to review by hand (Supabase's Table
+-- Editor doubles as a spreadsheet, with a CSV export button) and decide
+-- whether to promote one into rule_templates/minigame_templates.
+create table rule_submissions (
+  id          uuid default uuid_generate_v4() primary key,
+  created_at  timestamptz default now(),
+  text        text not null,
+  points      integer,
+  game_name   text
+);
+
+create table minigame_submissions (
+  id          uuid default uuid_generate_v4() primary key,
+  created_at  timestamptz default now(),
+  name        text not null,
+  game_name   text
+);
+
+alter table rule_submissions enable row level security;
+alter table minigame_submissions enable row level security;
+
+-- Insert-only for players — no select/update/delete policy means RLS
+-- blocks those for the anon key, so only the project owner (via the
+-- Supabase dashboard, which bypasses RLS) can actually read this list.
+create policy "rule_submissions_insert" on rule_submissions
+  for insert to anon, authenticated with check (true);
+
+create policy "minigame_submissions_insert" on minigame_submissions
+  for insert to anon, authenticated with check (true);
+
 -- ── SCORING TRIGGER ────────────────────────────────────────────────────────
 -- Computes round_drinks.points server-side from rounds.par and games.scoring_table,
 -- so points can't be tampered with client-side despite the permissive RLS below.

@@ -227,24 +227,44 @@ export function RoundSetup() {
         .eq("id", currentRound.id);
       if (roundError) throw roundError;
 
+      // Custom text doesn't join the curated dropdown pool automatically —
+      // that would let junk creep into what every player sees. Genuinely
+      // new entries (not already a known suggestion) instead go into an
+      // admin-only review table for the host to promote by hand.
+      const trimmedRule = ruleText.trim();
+      const isKnownRule = recentRules.some(
+        (s) => s.value.toLowerCase() === trimmedRule.toLowerCase()
+      );
       trackRuleText(ruleText);
-      supabase
-        .from("rule_templates")
-        .upsert({ text: ruleText.trim() }, { onConflict: "text", ignoreDuplicates: true })
-        .then(({ error: templateError }) => {
-          if (templateError) console.error(templateError);
-        });
-      if (minigameEnabled && minigameName.trim()) {
-        trackMinigameName(minigameName);
+      if (!isKnownRule) {
         supabase
-          .from("minigame_templates")
-          .upsert(
-            { name: minigameName.trim() },
-            { onConflict: "name", ignoreDuplicates: true }
-          )
-          .then(({ error: templateError }) => {
-            if (templateError) console.error(templateError);
+          .from("rule_submissions")
+          .insert({
+            text: trimmedRule,
+            points: rulePoints,
+            game_name: game?.name ?? null,
+          })
+          .then(({ error: submissionError }) => {
+            if (submissionError) console.error(submissionError);
           });
+      }
+      if (minigameEnabled && minigameName.trim()) {
+        const trimmedMinigame = minigameName.trim();
+        const isKnownMinigame = recentMinigames.some(
+          (s) => s.value.toLowerCase() === trimmedMinigame.toLowerCase()
+        );
+        trackMinigameName(minigameName);
+        if (!isKnownMinigame) {
+          supabase
+            .from("minigame_submissions")
+            .insert({
+              name: trimmedMinigame,
+              game_name: game?.name ?? null,
+            })
+            .then(({ error: submissionError }) => {
+              if (submissionError) console.error(submissionError);
+            });
+        }
       }
     } catch (err) {
       console.error(err);
