@@ -391,7 +391,7 @@ export default function CreateGamePage() {
             )}
           </div>
 
-          {code && <GameCodeBadge code={code} />}
+          {code && <GameCodeBadge code={code} gameName={gameName} />}
 
           <Button
             type="button"

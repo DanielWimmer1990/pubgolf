@@ -142,7 +142,7 @@ export function Lobby() {
         )}
       </div>
 
-      <GameCodeBadge code={code} />
+      <GameCodeBadge code={code} gameName={game.name} />
 
       {isHost ? (
         <div className="w-full max-w-md">

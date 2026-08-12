@@ -6,19 +6,26 @@ import { toast } from "sonner";
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const SHARE_TEXT_TEMPLATES = (code: string) => [
-  `⛳🍺 Die Bar-Tour ruft! Tritt meiner Pubgolf-Runde bei — Code ${code}`,
-  `🍻 Wer schlägt am wenigsten Schlucke? Finden wir jetzt raus. Code: ${code}`,
-  `⛳ PAR ist nur eine Empfehlung. Steig ein — Code ${code}`,
-  `🥃 Von Bar zu Bar, Schluck für Schluck. Bist du dabei? Code: ${code}`,
+const SHARE_TEXT_TEMPLATES = (name: string, code: string) => [
+  `⛳🍺 Herausforderung ${name} wartet auf dich — nimmst du sie an? Trag dich ein: Code ${code}`,
+  `🍻 ${name} ruft dich zur Bar-Tour. Nimm die Herausforderung an — Code: ${code}`,
+  `⛳ Bist du bereit für ${name}? Trag dich ein und leg los — Code ${code}`,
+  `🥃 Die Herausforderung ${name} wartet. Schnapp dir den Code und steig ein: ${code}`,
 ];
 
-function pickShareText(code: string): string {
-  const options = SHARE_TEXT_TEMPLATES(code);
+function pickShareText(name: string, code: string): string {
+  const options = SHARE_TEXT_TEMPLATES(name, code);
   return options[Math.floor(Math.random() * options.length)];
 }
 
-export function GameCodeBadge({ code }: { code: string }) {
+export function GameCodeBadge({
+  code,
+  gameName,
+}: {
+  code: string;
+  gameName?: string | null;
+}) {
+  const displayName = gameName?.trim() || "Pubgolf";
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,8 +51,8 @@ export function GameCodeBadge({ code }: { code: string }) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Pubgolf",
-          text: pickShareText(code),
+          title: displayName,
+          text: pickShareText(displayName, code),
           url,
         });
       } catch {
