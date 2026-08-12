@@ -5,8 +5,10 @@ import { toast } from "sonner";
 import { ArrowLeft, Dices, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SuggestionInput } from "@/components/ui/suggestion-input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { DiceRoller } from "@/components/game/DiceRoller";
 import { InfoButton } from "@/components/game/InfoButton";
 import { useGame } from "@/hooks/useGame";
@@ -20,23 +22,42 @@ import {
 } from "@/lib/roundHistory";
 
 export function RoundSetup() {
-  const { game, currentRound, activePlayer, players, rounds } = useGame();
-  const [barName, setBarName] = useState("");
+  const { game, currentRound, activePlayer, players, rounds, rules } =
+    useGame();
+  // If we're re-entering setup for a round that already had values (e.g.
+  // the host went back from the active round to tweak PAR or the rule),
+  // prefill from what's already on the round instead of starting blank.
+  const existingRule = rules.find((r) => r.round_id === currentRound?.id);
+  const [barName, setBarName] = useState(() => currentRound?.bar_name ?? "");
   const [drinkDescription, setDrinkDescription] = useState(
-    () => game?.default_drink ?? ""
+    () => currentRound?.drink_description ?? game?.default_drink ?? ""
   );
-  const [par, setPar] = useState<number | null>(null);
-  const [ruleText, setRuleText] = useState("");
+  const [par, setPar] = useState<number | null>(() => currentRound?.par ?? null);
+  const [ruleText, setRuleText] = useState(
+    () => existingRule?.text ?? currentRound?.draft_rule_text ?? ""
+  );
   const [rulePoints, setRulePoints] = useState(
-    () => game?.default_rule_points ?? 2
+    () =>
+      existingRule?.violation_points ??
+      currentRound?.draft_rule_points ??
+      game?.default_rule_points ??
+      2
   );
   const [minigameEnabled, setMinigameEnabled] = useState(true);
-  const [minigameName, setMinigameName] = useState("");
+  const [minigameName, setMinigameName] = useState(
+    () => currentRound?.minigame_name ?? ""
+  );
   const [minigamePointsWinner, setMinigamePointsWinner] = useState(
-    () => game?.default_minigame_points_winner ?? -1
+    () =>
+      currentRound?.minigame_points_winner ??
+      game?.default_minigame_points_winner ??
+      -1
   );
   const [minigamePointsLoser, setMinigamePointsLoser] = useState(
-    () => game?.default_minigame_points_loser ?? 1
+    () =>
+      currentRound?.minigame_points_loser ??
+      game?.default_minigame_points_loser ??
+      1
   );
   const [submitting, setSubmitting] = useState(false);
   const [goingBack, setGoingBack] = useState(false);
@@ -72,6 +93,49 @@ export function RoundSetup() {
       });
   }, []);
 
+  // Sync the in-progress setup to the `rounds` row (debounced) so
+  // non-host players waiting on RoundWaiting can see the bar, PAR,
+  // minigame and rule take shape live, instead of just a generic
+  // "host is choosing" message.
+  const currentRoundId = currentRound?.id;
+  useEffect(() => {
+    if (!currentRoundId) return;
+    const timer = setTimeout(() => {
+      supabase
+        .from("rounds")
+        .update({
+          bar_name: barName.trim() || null,
+          drink_description: drinkDescription.trim() || null,
+          par,
+          minigame_name: minigameEnabled ? minigameName.trim() || null : null,
+          minigame_points_winner: minigameEnabled ? minigamePointsWinner : null,
+          minigame_points_loser: minigameEnabled ? minigamePointsLoser : null,
+          draft_rule_text: ruleText.trim() || null,
+          draft_rule_points: rulePoints,
+        })
+        .eq("id", currentRoundId)
+        .then(({ error }) => {
+          if (error) console.error(error);
+        });
+    }, 500);
+    return () => clearTimeout(timer);
+    // currentRoundId (not the currentRound object) is intentional — the
+    // object reference changes on every realtime echo of this very write,
+    // which would otherwise retrigger this effect forever.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    currentRoundId,
+    barName,
+    drinkDescription,
+    par,
+    ruleText,
+    rulePoints,
+    minigameEnabled,
+    minigameName,
+    minigamePointsWinner,
+    minigamePointsLoser,
+  ]);
+
   if (!currentRound || !game) return null;
 
   const canStart = !!par && barName.trim().length > 0 && ruleText.trim().length > 0;
@@ -88,18 +152,28 @@ export function RoundSetup() {
     if (!canStart || !currentRound) return;
     setSubmitting(true);
     try {
-      const { error: ruleError, data: rule } = await supabase
-        .from("rules")
-        .insert({
-          game_id: currentRound.game_id,
-          round_id: currentRound.id,
-          created_by_player_id: currentRound.active_player_id,
-          text: ruleText.trim(),
-          violation_points: rulePoints,
-        })
-        .select()
-        .single();
-      if (ruleError || !rule) throw ruleError;
+      // Editing an already-configured round (host went back from active
+      // setup) updates the existing rule instead of inserting a duplicate.
+      if (existingRule) {
+        const { error: ruleError } = await supabase
+          .from("rules")
+          .update({ text: ruleText.trim(), violation_points: rulePoints })
+          .eq("id", existingRule.id);
+        if (ruleError) throw ruleError;
+      } else {
+        const { error: ruleError, data: rule } = await supabase
+          .from("rules")
+          .insert({
+            game_id: currentRound.game_id,
+            round_id: currentRound.id,
+            created_by_player_id: currentRound.active_player_id,
+            text: ruleText.trim(),
+            violation_points: rulePoints,
+          })
+          .select()
+          .single();
+        if (ruleError || !rule) throw ruleError;
+      }
 
       const isFinalRound =
         game!.hide_leaderboard_final_round &&
@@ -256,21 +330,14 @@ export function RoundSetup() {
             Strafpunkte. Regeln bleiben aktiv, auch über diese Runde hinaus.
           </InfoButton>
         </Label>
-        <Input
+        <SuggestionInput
           id="rule-text"
-          list="rule-suggestions"
           value={ruleText}
-          onChange={(e) => setRuleText(e.target.value)}
+          onChange={setRuleText}
+          suggestions={recentRules}
           placeholder="z.B. Kein Ja und Nein mehr sagen"
           maxLength={140}
         />
-        {recentRules.length > 0 && (
-          <datalist id="rule-suggestions">
-            {recentRules.map((text) => (
-              <option key={text} value={text} />
-            ))}
-          </datalist>
-        )}
         <div className="flex items-center justify-between gap-3">
           <Label htmlFor="rule-points" className="text-sm text-muted-foreground">
             Punkte bei Regelbruch
@@ -292,32 +359,32 @@ export function RoundSetup() {
       </div>
 
       <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-        <Label className="flex items-center gap-1.5">
-          <Dices className="h-4 w-4 text-primary" />
-          Minispiel
-          <InfoButton title="Minispiel">
-            Ein kleines Duell oder eine Challenge für diese Runde (z.&nbsp;B.
-            Armdrücken, Schere-Stein-Papier). Gewinner und Verlierer bekommen
-            die hier festgelegten Punkte. Falls diese Runde kein Minispiel
-            stattfinden soll, kannst du es unten überspringen.
-          </InfoButton>
-        </Label>
+        <div className="flex items-center justify-between gap-3">
+          <Label className="flex items-center gap-1.5">
+            <Dices className="h-4 w-4 text-primary" />
+            Minispiel
+            <InfoButton title="Minispiel">
+              Ein kleines Duell oder eine Challenge für diese Runde (z.&nbsp;B.
+              Armdrücken, Schere-Stein-Papier). Gewinner und Verlierer
+              bekommen die hier festgelegten Punkte. Falls diese Runde kein
+              Minispiel stattfinden soll, kannst du es rechts abschalten.
+            </InfoButton>
+          </Label>
+          <Switch
+            checked={minigameEnabled}
+            onCheckedChange={setMinigameEnabled}
+            aria-label="Minispiel für diese Runde"
+          />
+        </div>
         {minigameEnabled ? (
           <div className="space-y-3">
-            <Input
-              list="minigame-suggestions"
+            <SuggestionInput
               value={minigameName}
-              onChange={(e) => setMinigameName(e.target.value)}
+              onChange={setMinigameName}
+              suggestions={recentMinigames}
               placeholder="z.B. Schere Stein Papier"
               maxLength={60}
             />
-            {recentMinigames.length > 0 && (
-              <datalist id="minigame-suggestions">
-                {recentMinigames.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
-            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">
@@ -342,31 +409,11 @@ export function RoundSetup() {
                 />
               </div>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="w-full text-muted-foreground"
-              onClick={() => setMinigameEnabled(false)}
-            >
-              Diese Runde kein Minispiel
-            </Button>
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              Kein Minispiel diese Runde.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-primary/40"
-              onClick={() => setMinigameEnabled(true)}
-            >
-              Doch ausrufen
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Kein Minispiel diese Runde.
+          </p>
         )}
       </div>
 

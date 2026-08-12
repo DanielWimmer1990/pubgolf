@@ -65,6 +65,8 @@ export type Round = {
   minigame_points_winner: number | null;
   minigame_points_loser: number | null;
   is_final_round: boolean;
+  draft_rule_text: string | null;
+  draft_rule_points: number | null;
 };
 
 export type RoundDrink = {

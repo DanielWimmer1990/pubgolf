@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
-import { Home } from "lucide-react";
+import { Home, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { ScoreProgressionChart } from "@/components/game/ScoreProgressionChart";
@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import type { Player } from "@/types/database";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
-const REVEAL_STEP = 0.7;
 const CONFETTI_COLORS = ["#F97316", "#EF4444", "#EAB308", "#10B981", "#FBBF24"];
 
 function fireConfetti(big = false) {
@@ -69,15 +68,15 @@ export function FinalResults() {
   } = useGame();
   const presentation = game?.show_final_presentation ?? true;
   const pagesRef = useRef<HTMLDivElement>(null);
-  const [revealed, setRevealed] = useState(false);
-  const showResults = !presentation || revealed;
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
+  const allRevealed =
+    !presentation || revealedIds.size >= leaderboard.length;
+  const showResults = allRevealed;
 
-  function reveal() {
-    if (revealed) return;
-    setRevealed(true);
-    fireConfetti();
-    const winnerDelayMs = leaderboard.length * REVEAL_STEP * 1000;
-    window.setTimeout(() => fireConfetti(true), winnerDelayMs + 200);
+  function revealPlayer(playerId: string, isWinner: boolean) {
+    if (revealedIds.has(playerId)) return;
+    setRevealedIds((prev) => new Set(prev).add(playerId));
+    if (isWinner) fireConfetti(true);
   }
 
   const funAwards = useMemo<FunAward[]>(() => {
@@ -345,60 +344,16 @@ export function FinalResults() {
           <p className="text-sm text-muted-foreground">Endstand</p>
         </div>
 
-        {presentation && !revealed ? (
-          <div className="flex flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white/5 py-10 backdrop-blur-xl">
-            <p className="text-sm text-muted-foreground">Wer hat gewonnen?</p>
-            <Button size="lg" className="gap-2 text-base" onClick={reveal}>
-              🥁 Rangliste aufdecken
-            </Button>
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {leaderboard.map(({ player, total }, index) =>
-              presentation ? (
-                <motion.li
-                  key={player.id}
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={
-                    index === 0
-                      ? { opacity: 1, y: 0, scale: [1, 1.3, 1] }
-                      : { opacity: 1, y: 0 }
-                  }
-                  transition={{
-                    delay: (leaderboard.length - index) * REVEAL_STEP,
-                    duration: index === 0 ? 0.7 : 0.4,
-                    times: index === 0 ? [0, 0.5, 1] : undefined,
-                  }}
-                  className={cn(
-                    "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-xl",
-                    index === 0 &&
-                      "border-amber-400/60 bg-amber-400/10 shadow-[0_0_40px_-8px] shadow-amber-400/50"
-                  )}
-                >
-                  <span className="w-7 text-center text-lg">
-                    {MEDALS[index] ?? index + 1}
-                  </span>
-                  <PlayerAvatar
-                    name={player.name}
-                    color={player.color}
-                    avatarEmoji={player.avatar_emoji}
-                    size="md"
-                  />
-                  <span className="flex-1 truncate font-semibold">
-                    {player.name}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-lg font-bold tabular-nums",
-                      total < 0 && "text-emerald-500",
-                      total > 0 && "text-red-500"
-                    )}
-                  >
-                    {total > 0 ? "+" : ""}
-                    {total}
-                  </span>
-                </motion.li>
-              ) : (
+        {presentation && !allRevealed && (
+          <p className="text-center text-sm text-muted-foreground">
+            Tipp auf einen Platz, um ihn aufzudecken 🤫
+          </p>
+        )}
+        <ul className="space-y-2">
+          {leaderboard.map(({ player, total }, index) => {
+            const isWinner = index === 0;
+            if (!presentation) {
+              return (
                 <li
                   key={player.id}
                   className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2"
@@ -426,10 +381,75 @@ export function FinalResults() {
                     {total}
                   </span>
                 </li>
-              )
-            )}
-          </ul>
-        )}
+              );
+            }
+
+            const isRevealed = revealedIds.has(player.id);
+            return (
+              <motion.li
+                key={`${player.id}-${isRevealed}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={
+                  isRevealed && isWinner
+                    ? { opacity: 1, y: 0, scale: [1, 1.25, 1] }
+                    : { opacity: 1, y: 0 }
+                }
+                transition={{
+                  duration: isRevealed && isWinner ? 0.6 : 0.25,
+                  times: isRevealed && isWinner ? [0, 0.5, 1] : undefined,
+                }}
+                onClick={
+                  isRevealed ? undefined : () => revealPlayer(player.id, isWinner)
+                }
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-xl",
+                  !isRevealed &&
+                    "cursor-pointer select-none hover:border-primary/40 hover:bg-white/10",
+                  isRevealed &&
+                    isWinner &&
+                    "border-amber-400/60 bg-amber-400/10 shadow-[0_0_40px_-8px] shadow-amber-400/50"
+                )}
+              >
+                <span className="w-7 text-center text-lg">
+                  {MEDALS[index] ?? index + 1}
+                </span>
+                {isRevealed ? (
+                  <>
+                    <PlayerAvatar
+                      name={player.name}
+                      color={player.color}
+                      avatarEmoji={player.avatar_emoji}
+                      size="md"
+                    />
+                    <span className="flex-1 truncate font-semibold">
+                      {player.name}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-lg font-bold tabular-nums",
+                        total < 0 && "text-emerald-500",
+                        total > 0 && "text-red-500"
+                      )}
+                    >
+                      {total > 0 ? "+" : ""}
+                      {total}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed border-white/20 text-muted-foreground">
+                      ?
+                    </span>
+                    <span className="flex flex-1 items-center gap-1.5 truncate text-sm text-muted-foreground">
+                      <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                      Tippen zum Aufdecken
+                    </span>
+                  </>
+                )}
+              </motion.li>
+            );
+          })}
+        </ul>
 
         {presentation && showResults && summary && (
           <div className="space-y-1.5">

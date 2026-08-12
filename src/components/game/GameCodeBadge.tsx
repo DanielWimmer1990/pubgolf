@@ -6,6 +6,18 @@ import { toast } from "sonner";
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const SHARE_TEXT_TEMPLATES = (code: string) => [
+  `⛳🍺 Die Bar-Tour ruft! Tritt meiner Pubgolf-Runde bei — Code ${code}`,
+  `🍻 Wer schlägt am wenigsten Schlucke? Finden wir jetzt raus. Code: ${code}`,
+  `⛳ PAR ist nur eine Empfehlung. Steig ein — Code ${code}`,
+  `🥃 Von Bar zu Bar, Schluck für Schluck. Bist du dabei? Code: ${code}`,
+];
+
+function pickShareText(code: string): string {
+  const options = SHARE_TEXT_TEMPLATES(code);
+  return options[Math.floor(Math.random() * options.length)];
+}
+
 export function GameCodeBadge({ code }: { code: string }) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
@@ -33,7 +45,7 @@ export function GameCodeBadge({ code }: { code: string }) {
       try {
         await navigator.share({
           title: "Pubgolf",
-          text: `Tritt meinem Pubgolf-Spiel bei! Code: ${code}`,
+          text: pickShareText(code),
           url,
         });
       } catch {

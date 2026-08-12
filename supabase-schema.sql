@@ -65,6 +65,11 @@ create table rounds (
   minigame_points_winner  integer,
   minigame_points_loser   integer,
   is_final_round          boolean not null default false,
+  -- Live draft of the rule the host is currently typing during round setup,
+  -- synced so spectators can see it forming before "Runde starten" commits
+  -- the real row into `rules`. Superseded/ignored once the round is active.
+  draft_rule_text         text,
+  draft_rule_points       integer,
   unique (game_id, round_number)
 );
 

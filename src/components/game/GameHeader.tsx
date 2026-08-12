@@ -5,6 +5,15 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { RulesList } from "@/components/game/RulesList";
 import { LeaderboardDrawer } from "@/components/game/LeaderboardDrawer";
 import { useGame } from "@/hooks/useGame";
@@ -13,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 export function GameHeader() {
   const { game, currentRound, isHost } = useGame();
   const [ending, setEnding] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (!game) return null;
 
@@ -25,9 +35,6 @@ export function GameHeader() {
     !suspenseActive && (isHost || game.show_live_leaderboard);
 
   async function endGame() {
-    if (!window.confirm("Spiel wirklich beenden und Endergebnis zeigen?")) {
-      return;
-    }
     setEnding(true);
     const { error } = await supabase
       .from("games")
@@ -37,6 +44,7 @@ export function GameHeader() {
       console.error(error);
       toast.error("Spiel konnte nicht beendet werden.");
       setEnding(false);
+      setConfirmOpen(false);
     }
   }
 
@@ -68,14 +76,35 @@ export function GameHeader() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={endGame}
-            disabled={ending}
+            onClick={() => setConfirmOpen(true)}
             className="text-muted-foreground"
           >
             Beenden
           </Button>
         )}
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Spiel beenden?</DialogTitle>
+            <DialogDescription>
+              Das Endergebnis wird für alle angezeigt. Diese Aktion kann
+              nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Abbrechen
+              </Button>
+            </DialogClose>
+            <Button type="button" onClick={endGame} disabled={ending}>
+              {ending ? "Beende…" : "Ja, beenden"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

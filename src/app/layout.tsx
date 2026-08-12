@@ -20,6 +20,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://pubgolf-game.netlify.app"),
   title: "Pubgolf",
   description: "Von Bar zu Bar, PAR für PAR — das Trinkspiel für deine Gruppe.",
   manifest: "/manifest.webmanifest",

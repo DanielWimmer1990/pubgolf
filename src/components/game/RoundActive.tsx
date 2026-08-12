@@ -2,7 +2,17 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { HostSipEntry } from "@/components/game/HostSipEntry";
 import { RoundLiveStatus } from "@/components/game/RoundLiveStatus";
 import { MinigameResultForm } from "@/components/game/MinigameResultForm";
@@ -13,8 +23,18 @@ import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 
 export function RoundActive() {
-  const { currentRound, isHost, players, roundDrinks } = useGame();
+  const {
+    currentRound,
+    isHost,
+    players,
+    roundDrinks,
+    minigameResults,
+    ruleViolations,
+    pointAdjustments,
+  } = useGame();
   const [ending, setEnding] = useState(false);
+  const [goingBack, setGoingBack] = useState(false);
+  const [backConfirmOpen, setBackConfirmOpen] = useState(false);
   if (!currentRound) return null;
 
   const reportedCount = players.filter((p) =>
@@ -26,6 +46,11 @@ export function RoundActive() {
     )
   ).length;
   const allReported = reportedCount === players.length;
+  const hasEnteredResults =
+    reportedCount > 0 ||
+    minigameResults.some((mr) => mr.round_id === currentRound.id) ||
+    ruleViolations.some((rv) => rv.round_id === currentRound.id) ||
+    pointAdjustments.some((pa) => pa.round_id === currentRound.id);
 
   async function endRound() {
     if (!currentRound) return;
@@ -41,8 +66,36 @@ export function RoundActive() {
     }
   }
 
+  async function backToSetup() {
+    if (!currentRound) return;
+    setGoingBack(true);
+    const { error } = await supabase
+      .from("rounds")
+      .update({ status: "setup" })
+      .eq("id", currentRound.id);
+    setGoingBack(false);
+    setBackConfirmOpen(false);
+    if (error) {
+      console.error(error);
+      toast.error("Konnte nicht zur Vorbereitung zurückgehen.");
+    }
+  }
+
   return (
     <div className="flex w-full flex-col items-center gap-8">
+      {isHost && (
+        <button
+          type="button"
+          onClick={() =>
+            hasEnteredResults ? setBackConfirmOpen(true) : backToSetup()
+          }
+          disabled={goingBack}
+          className="self-start flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {goingBack ? "Öffne…" : "Zurück zur Vorbereitung"}
+        </button>
+      )}
       <div className="text-center">
         {currentRound.round_number === players.length && (
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
@@ -97,6 +150,30 @@ export function RoundActive() {
           )}
         </div>
       )}
+
+      <Dialog open={backConfirmOpen} onOpenChange={setBackConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Zurück zur Vorbereitung?</DialogTitle>
+            <DialogDescription>
+              Für diese Runde sind schon Ergebnisse eingetragen (Schlucke,
+              Minispiel oder Strafpunkte). Änderungen an Bar, PAR oder
+              Minispiel wirken sich nicht rückwirkend auf bereits
+              gespeicherte Einträge aus.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Abbrechen
+              </Button>
+            </DialogClose>
+            <Button type="button" onClick={backToSetup} disabled={goingBack}>
+              {goingBack ? "Öffne…" : "Ja, zurück"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
