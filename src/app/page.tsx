@@ -69,10 +69,18 @@ export default function HomePage() {
     router.push(`/game/${normalized}`);
   }
 
-  async function deleteGame(e: React.MouseEvent, gameCode: string) {
+  async function deleteGame(
+    e: React.MouseEvent,
+    gameCode: string,
+    status: GameStatus
+  ) {
     e.preventDefault();
     e.stopPropagation();
-    if (!window.confirm("Dieses Spiel endgültig löschen?")) return;
+    const confirmText =
+      status === "finished"
+        ? "Dieses Spiel endgültig löschen?"
+        : "Dieses Spiel läuft noch — trotzdem endgültig löschen? Alle Spieler verlieren den Zugriff.";
+    if (!window.confirm(confirmText)) return;
     const { error } = await supabase.from("games").delete().eq("code", gameCode);
     if (error) {
       console.error(error);
@@ -174,16 +182,14 @@ export default function HomePage() {
                     <span className={`text-xs ${STATUS_CLASS[game.status]}`}>
                       {STATUS_LABEL[game.status]}
                     </span>
-                    {game.status === "finished" && (
-                      <button
-                        type="button"
-                        onClick={(e) => deleteGame(e, game.code)}
-                        aria-label="Spiel löschen"
-                        className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-red-400"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => deleteGame(e, game.code, game.status)}
+                      aria-label="Spiel löschen"
+                      className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-red-400"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </span>
                 </a>
               </li>
