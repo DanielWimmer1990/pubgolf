@@ -5,7 +5,10 @@ import { toast } from "sonner";
 import { ArrowLeft, Dices, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SuggestionInput } from "@/components/ui/suggestion-input";
+import {
+  SuggestionInput,
+  type Suggestion,
+} from "@/components/ui/suggestion-input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -20,6 +23,22 @@ import {
   trackRuleText,
   trackMinigameName,
 } from "@/lib/roundHistory";
+
+function mergeSuggestions(
+  prev: Suggestion[],
+  incoming: Suggestion[]
+): Suggestion[] {
+  const byValue = new Map(prev.map((s) => [s.value.toLowerCase(), s]));
+  for (const s of incoming) {
+    const key = s.value.toLowerCase();
+    const existing = byValue.get(key);
+    // Prefer whichever entry actually has a description.
+    if (!existing || (!existing.description && s.description)) {
+      byValue.set(key, s);
+    }
+  }
+  return [...byValue.values()];
+}
 
 export function RoundSetup() {
   const { game, currentRound, activePlayer, players, rounds, rules } =
@@ -61,35 +80,49 @@ export function RoundSetup() {
   );
   const [submitting, setSubmitting] = useState(false);
   const [goingBack, setGoingBack] = useState(false);
-  const [recentRules, setRecentRules] = useState<string[]>([]);
-  const [recentMinigames, setRecentMinigames] = useState<string[]>([]);
+  const [recentRules, setRecentRules] = useState<Suggestion[]>([]);
+  const [recentMinigames, setRecentMinigames] = useState<Suggestion[]>([]);
 
   useEffect(() => {
     queueMicrotask(() => {
-      setRecentRules(getRecentRuleTexts());
-      setRecentMinigames(getRecentMinigameNames());
+      setRecentRules((prev) =>
+        mergeSuggestions(
+          prev,
+          getRecentRuleTexts().map((value) => ({ value }))
+        )
+      );
+      setRecentMinigames((prev) =>
+        mergeSuggestions(
+          prev,
+          getRecentMinigameNames().map((value) => ({ value }))
+        )
+      );
     });
     supabase
       .from("rule_templates")
-      .select("text")
+      .select("text, description")
       .order("text")
       .then(({ data }) => {
         if (!data) return;
-        setRecentRules((prev) => {
-          const merged = [...prev, ...data.map((r) => r.text)];
-          return [...new Set(merged)];
-        });
+        setRecentRules((prev) =>
+          mergeSuggestions(
+            prev,
+            data.map((r) => ({ value: r.text, description: r.description }))
+          )
+        );
       });
     supabase
       .from("minigame_templates")
-      .select("name")
+      .select("name, description")
       .order("name")
       .then(({ data }) => {
         if (!data) return;
-        setRecentMinigames((prev) => {
-          const merged = [...prev, ...data.map((m) => m.name)];
-          return [...new Set(merged)];
-        });
+        setRecentMinigames((prev) =>
+          mergeSuggestions(
+            prev,
+            data.map((m) => ({ value: m.name, description: m.description }))
+          )
+        );
       });
   }, []);
 

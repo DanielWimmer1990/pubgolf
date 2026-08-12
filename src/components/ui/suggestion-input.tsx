@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { InfoButton } from "@/components/game/InfoButton";
+
+export type Suggestion = { value: string; description?: string | null };
 
 export function SuggestionInput({
   value,
@@ -16,7 +19,7 @@ export function SuggestionInput({
 }: {
   value: string;
   onChange: (value: string) => void;
-  suggestions: string[];
+  suggestions: Suggestion[];
   browseLabel: string;
   id?: string;
   placeholder?: string;
@@ -30,7 +33,9 @@ export function SuggestionInput({
     const query = value.trim().toLowerCase();
     const pool = query
       ? suggestions.filter(
-          (s) => s.toLowerCase().includes(query) && s.toLowerCase() !== query
+          (s) =>
+            s.value.toLowerCase().includes(query) &&
+            s.value.toLowerCase() !== query
         )
       : suggestions;
     return pool.slice(0, 8);
@@ -81,18 +86,26 @@ export function SuggestionInput({
       </button>
       {showList && (
         <ul className="max-h-52 overflow-y-auto rounded-2xl border border-white/10 bg-popover p-1 text-popover-foreground shadow-inner">
-          {filtered.map((suggestion) => (
-            <li key={suggestion}>
+          {filtered.map((suggestion, i) => (
+            <li
+              key={`${suggestion.value.toLowerCase()}-${i}`}
+              className="flex items-center gap-1"
+            >
               <button
                 type="button"
                 onClick={() => {
-                  onChange(suggestion);
+                  onChange(suggestion.value);
                   setOpen(false);
                 }}
-                className="w-full rounded-xl px-3 py-2.5 text-left text-sm hover:bg-white/10 active:bg-white/15"
+                className="flex-1 truncate rounded-xl px-3 py-2.5 text-left text-sm font-semibold hover:bg-white/10 active:bg-white/15"
               >
-                {suggestion}
+                {suggestion.value}
               </button>
+              {suggestion.description && (
+                <InfoButton title={suggestion.value}>
+                  {suggestion.description}
+                </InfoButton>
+              )}
             </li>
           ))}
         </ul>

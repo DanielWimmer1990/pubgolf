@@ -126,10 +126,12 @@ export type RuleTemplate = {
   id: string;
   created_at: string;
   text: string;
+  description: string | null;
 };
 
 export type MinigameTemplate = {
   id: string;
   created_at: string;
   name: string;
+  description: string | null;
 };
