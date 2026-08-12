@@ -44,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <div className="party-backdrop-accent" />
         </div>
         {children}
-        <Toaster richColors position="bottom-center" />
+        <Toaster richColors position="top-center" />
       </body>
     </html>
   );
