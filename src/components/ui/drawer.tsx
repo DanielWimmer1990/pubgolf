@@ -4,11 +4,40 @@ import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
+import { useBackButtonClose } from "@/hooks/useBackButtonClose"
 
 function Drawer({
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  return <DrawerPrimitive.Root data-slot="drawer" {...props} />
+  const [open, setOpen] = React.useState(openProp ?? defaultOpen ?? false)
+
+  React.useEffect(() => {
+    if (openProp !== undefined) setOpen(openProp)
+  }, [openProp])
+
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      setOpen(next)
+      onOpenChange?.(next)
+    },
+    [onOpenChange]
+  )
+
+  // Phone back button/gesture closes the drawer instead of navigating the
+  // page underneath it away.
+  useBackButtonClose(open, handleOpenChange)
+
+  return (
+    <DrawerPrimitive.Root
+      data-slot="drawer"
+      open={open}
+      onOpenChange={handleOpenChange}
+      {...props}
+    />
+  )
 }
 
 function DrawerTrigger({

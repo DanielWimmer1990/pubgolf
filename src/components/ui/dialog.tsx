@@ -6,11 +6,41 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
+import { useBackButtonClose } from "@/hooks/useBackButtonClose"
 
 function Dialog({
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+  const [open, setOpen] = React.useState(openProp ?? defaultOpen ?? false)
+
+  React.useEffect(() => {
+    if (openProp !== undefined) setOpen(openProp)
+  }, [openProp])
+
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      setOpen(next)
+      onOpenChange?.(next)
+    },
+    [onOpenChange]
+  )
+
+  // Phone back button/gesture closes the dialog instead of navigating the
+  // page underneath it away — Radix dialogs don't participate in browser
+  // history on their own.
+  useBackButtonClose(open, handleOpenChange)
+
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      open={open}
+      onOpenChange={handleOpenChange}
+      {...props}
+    />
+  )
 }
 
 function DialogTrigger({
