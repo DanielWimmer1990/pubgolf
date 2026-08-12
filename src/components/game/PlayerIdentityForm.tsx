@@ -38,7 +38,6 @@ export function PlayerIdentityForm({
           onChange={(e) => onChange({ ...value, name: e.target.value })}
           placeholder="z.B. Max"
           maxLength={20}
-          autoFocus
         />
       </div>
 
