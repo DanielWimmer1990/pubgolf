@@ -19,6 +19,16 @@ type RoundBreakdownRow = {
   cells: { player: Player; sips: number | null; points: number | null }[];
 };
 
+// html2canvas doesn't reliably capture `background-clip: text` (gradient
+// text silently renders invisible in the exported PDF) — a plain radial
+// gradient on the page background is safe though, so that's where the
+// color goes instead of on the heading text.
+const PAGE_BACKGROUND_STYLE = {
+  backgroundColor: "#0b0714",
+  backgroundImage:
+    "radial-gradient(circle at 12% 12%, rgba(251,122,30,0.35), transparent 55%), radial-gradient(circle at 88% 22%, rgba(236,72,153,0.28), transparent 55%), radial-gradient(circle at 50% 95%, rgba(124,58,237,0.35), transparent 55%)",
+};
+
 function PageShell({
   title,
   subtitle,
@@ -30,16 +40,14 @@ function PageShell({
 }) {
   return (
     <div
-      style={{ width: PAGE_W, height: PAGE_H }}
-      className="flex flex-col bg-background px-16 py-12"
+      style={{ width: PAGE_W, height: PAGE_H, ...PAGE_BACKGROUND_STYLE }}
+      className="flex flex-col px-16 py-12"
     >
       <div className="mb-8 flex items-baseline justify-between">
-        <h1 className="font-heading text-3xl font-bold bg-gradient-to-r from-orange-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
+        <h1 className="font-heading text-4xl font-bold text-orange-300">
           🏁 {title}
         </h1>
-        {subtitle && (
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        )}
+        {subtitle && <p className="text-sm text-white/60">{subtitle}</p>}
       </div>
       <div className="flex-1 min-h-0">{children}</div>
     </div>
@@ -47,28 +55,28 @@ function PageShell({
 }
 
 const SLOGAN_TEMPLATES = (
+  gameName: string,
   winnerName: string | undefined,
   roundCount: number,
   playerCount: number
 ) => [
-  `${playerCount} Spieler betraten die Bars. Nur ${
-    winnerName ?? "einer"
-  } verließ sie als Champion.`,
-  `${roundCount} Runden, ${playerCount} Legenden, null Reue.`,
-  `Wo PAR nur eine Empfehlung war.`,
+  `${gameName} — wo jeder Schluck zählt und PAR nur eine Empfehlung ist.`,
+  `Willkommen bei ${gameName}. Nüchtern kommt hier keiner mehr raus.`,
+  `${gameName}: ${playerCount} Spieler, ${roundCount} Runden, null Reue.`,
   winnerName
-    ? `${winnerName} trinkt. ${winnerName} gewinnt. So einfach ist das.`
-    : `Getrunken wurde hart, gewonnen noch härter.`,
-  `Schlag für Schlag, Schluck für Schluck — diese Nacht wird Geschichte.`,
-  `Beweismaterial für die nächste Ausrede beim Arzt.`,
+    ? `${gameName} ist Geschichte — und ${winnerName} hat sie geschrieben.`
+    : `${gameName} — die Legende beginnt jetzt.`,
+  `Die Bar-Tour ${gameName}: Schlag für Schlag, Schluck für Schluck.`,
+  `${gameName} — Beweismaterial für die nächste Ausrede beim Arzt.`,
 ];
 
 function generateSlogan(
+  gameName: string,
   winnerName: string | undefined,
   roundCount: number,
   playerCount: number
 ): string {
-  const options = SLOGAN_TEMPLATES(winnerName, roundCount, playerCount);
+  const options = SLOGAN_TEMPLATES(gameName, winnerName, roundCount, playerCount);
   return options[Math.floor(Math.random() * options.length)];
 }
 
@@ -105,6 +113,7 @@ export function ExportPages({
   pagesRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const slogan = generateSlogan(
+    gameName,
     leaderboard[0]?.player.name,
     roundBreakdown.length,
     players.length
@@ -119,17 +128,20 @@ export function ExportPages({
       {/* Page 1 — Cover */}
       <div data-export-page="cover">
         <div
-          style={{ width: PAGE_W, height: PAGE_H }}
-          className="flex flex-col items-center justify-center gap-6 bg-background px-16 text-center"
+          style={{ width: PAGE_W, height: PAGE_H, ...PAGE_BACKGROUND_STYLE }}
+          className="flex flex-col items-center justify-center gap-5 px-16 text-center"
         >
-          <div className="text-7xl">⛳🍺</div>
-          <h1 className="font-heading text-6xl font-bold bg-gradient-to-r from-orange-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
+          <div className="flex items-center gap-2 text-lg font-heading font-semibold uppercase tracking-[0.35em] text-white/70">
+            <span>⛳🍺</span>
+            <span>Pubgolf</span>
+          </div>
+          <h1 className="font-heading text-7xl font-bold text-white">
             {gameName}
           </h1>
-          <p className="max-w-2xl font-heading text-2xl font-medium text-foreground/90">
+          <p className="max-w-2xl font-heading text-2xl font-medium text-white/90">
             {slogan}
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-white/60">
             {roundBreakdown.length} Runden · {players.length} Spieler
           </p>
         </div>
