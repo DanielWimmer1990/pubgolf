@@ -52,7 +52,7 @@ export function SuggestionInput({
   const showList = open && filtered.length > 0;
 
   return (
-    <div ref={containerRef} className="relative space-y-1.5">
+    <div ref={containerRef} className="space-y-1.5">
       <Input
         id={id}
         value={value}
@@ -80,7 +80,7 @@ export function SuggestionInput({
         )}
       </button>
       {showList && (
-        <ul className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-52 overflow-y-auto rounded-2xl border border-white/10 bg-popover p-1 text-popover-foreground shadow-xl">
+        <ul className="max-h-52 overflow-y-auto rounded-2xl border border-white/10 bg-popover p-1 text-popover-foreground shadow-inner">
           {filtered.map((suggestion) => (
             <li key={suggestion}>
               <button
