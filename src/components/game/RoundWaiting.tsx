@@ -3,6 +3,8 @@
 import { MapPin, Dices, ScrollText, Gamepad2 } from "lucide-react";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { Leaderboard } from "@/components/game/Leaderboard";
+import { GuestQuickActions } from "@/components/game/GuestQuickActions";
+import { PastRoundsList } from "@/components/game/PastRoundsList";
 import { useGame } from "@/hooks/useGame";
 import { pointsKindLabel } from "@/lib/pointsLabel";
 
@@ -43,8 +45,9 @@ export function RoundWaiting() {
   ].filter((v): v is { icon: typeof MapPin; text: string } => !!v);
 
   return (
-    <div className="w-full max-w-md space-y-8">
-      <div className="flex flex-col items-center gap-4 text-center">
+    <div className="flex w-full flex-col items-center gap-8">
+      <GuestQuickActions />
+      <div className="flex w-full max-w-md flex-col items-center gap-4 text-center">
         <PlayerAvatar
           name={activePlayer.name}
           color={activePlayer.color}

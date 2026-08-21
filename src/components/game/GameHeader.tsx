@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { RulesList } from "@/components/game/RulesList";
 import { LeaderboardDrawer } from "@/components/game/LeaderboardDrawer";
+import { GameSettingsDialog } from "@/components/game/GameSettingsDialog";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 
@@ -70,17 +71,20 @@ export function GameHeader() {
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        {canSeeLeaderboard && <LeaderboardDrawer />}
-        <RulesList />
         {isHost && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setConfirmOpen(true)}
-            className="text-muted-foreground"
-          >
-            Beenden
-          </Button>
+          <>
+            {canSeeLeaderboard && <LeaderboardDrawer />}
+            <RulesList />
+            <GameSettingsDialog />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmOpen(true)}
+              className="text-muted-foreground"
+            >
+              Beenden
+            </Button>
+          </>
         )}
       </div>
 

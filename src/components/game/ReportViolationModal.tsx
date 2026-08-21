@@ -24,28 +24,39 @@ export function ReportViolationModal({
   onClose: () => void;
 }) {
   const { players, myPlayer, currentRound } = useGame();
-  const [violatorId, setViolatorId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
 
-  async function submit() {
-    if (!rule || !violatorId || !myPlayer) return;
-    setSubmitting(true);
-    const { error } = await supabase.from("rule_violations").insert({
-      game_id: rule.game_id,
-      rule_id: rule.id,
-      round_id: currentRound?.id ?? null,
-      violator_player_id: violatorId,
-      reported_by_player_id: myPlayer.id,
-      points_applied: rule.violation_points,
+  function toggle(playerId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(playerId)) next.delete(playerId);
+      else next.add(playerId);
+      return next;
     });
+  }
+
+  async function submit() {
+    if (!rule || selectedIds.size === 0 || !myPlayer) return;
+    setSubmitting(true);
+    const { error } = await supabase.from("rule_violations").insert(
+      [...selectedIds].map((playerId) => ({
+        game_id: rule.game_id,
+        rule_id: rule.id,
+        round_id: currentRound?.id ?? null,
+        violator_player_id: playerId,
+        reported_by_player_id: myPlayer.id,
+        points_applied: rule.violation_points,
+      }))
+    );
     setSubmitting(false);
     if (error) {
       console.error(error);
-      toast.error("Meldung konnte nicht gespeichert werden.");
+      toast.error("Eintrag konnte nicht gespeichert werden.");
       return;
     }
-    toast.success("Regelbruch gemeldet!");
-    setViolatorId(null);
+    toast.success("Regelbruch eingetragen!");
+    setSelectedIds(new Set());
     onClose();
   }
 
@@ -54,28 +65,30 @@ export function ReportViolationModal({
       open={!!rule}
       onOpenChange={(open) => {
         if (!open) {
-          setViolatorId(null);
+          setSelectedIds(new Set());
           onClose();
         }
       }}
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Regelbruch melden</DialogTitle>
+          <DialogTitle>Regelbruch eintragen</DialogTitle>
           <DialogDescription>{rule?.text}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">Wer hat die Regel gebrochen?</p>
+          <p className="text-sm text-muted-foreground">
+            Wer hat die Regel gebrochen? (Mehrfachauswahl möglich)
+          </p>
           <div className="grid grid-cols-3 gap-2">
             {players.map((player) => (
               <button
                 key={player.id}
                 type="button"
-                onClick={() => setViolatorId(player.id)}
+                onClick={() => toggle(player.id)}
                 className={cn(
                   "flex flex-col items-center gap-1 rounded-lg border p-2 text-xs",
-                  violatorId === player.id && "border-foreground"
+                  selectedIds.has(player.id) && "border-foreground"
                 )}
               >
                 <PlayerAvatar
@@ -92,13 +105,13 @@ export function ReportViolationModal({
           <Button
             className="w-full"
             onClick={submit}
-            disabled={!violatorId || submitting}
+            disabled={selectedIds.size === 0 || submitting}
           >
             {submitting
-              ? "Melde…"
-              : `Melden (${rule && rule.violation_points > 0 ? "+" : ""}${
-                  rule?.violation_points ?? 0
-                } Punkte)`}
+              ? "Trage ein…"
+              : `Eintragen${
+                  selectedIds.size > 0 ? ` (${selectedIds.size})` : ""
+                }`}
           </Button>
         </div>
       </DialogContent>

@@ -6,6 +6,9 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { Leaderboard } from "@/components/game/Leaderboard";
+import { RoundBreakdownCard } from "@/components/game/RoundBreakdownCard";
+import { GuestQuickActions } from "@/components/game/GuestQuickActions";
+import { PastRoundsList } from "@/components/game/PastRoundsList";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -240,6 +243,7 @@ export function RoundSummary() {
           {reopening ? "Öffne…" : "Zurück zur Runde"}
         </button>
       )}
+      <GuestQuickActions />
       <div className="text-center space-y-1">
         <h2 className="font-heading text-2xl font-bold">
           Runde {currentRound.round_number} beendet
@@ -290,6 +294,9 @@ export function RoundSummary() {
           </ul>
         </div>
       )}
+
+      {!isHost && <RoundBreakdownCard round={currentRound} />}
+      {!isHost && <PastRoundsList />}
 
       {isLastBaseRound && (
         <p className="text-center text-xs font-semibold uppercase tracking-wide text-primary">

@@ -19,12 +19,17 @@ import { MinigameResultForm } from "@/components/game/MinigameResultForm";
 import { RuleViolationBox } from "@/components/game/RuleViolationBox";
 import { PenaltyAdjustmentBox } from "@/components/game/PenaltyAdjustmentBox";
 import { ExtraPointsBox } from "@/components/game/ExtraPointsBox";
+import { RoundBreakdownCard } from "@/components/game/RoundBreakdownCard";
+import { GuestQuickActions } from "@/components/game/GuestQuickActions";
+import { PastRoundsList } from "@/components/game/PastRoundsList";
+import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 
 export function RoundActive() {
   const {
     currentRound,
+    activePlayer,
     isHost,
     players,
     roundDrinks,
@@ -96,11 +101,26 @@ export function RoundActive() {
           {goingBack ? "Öffne…" : "Zurück zur Vorbereitung"}
         </button>
       )}
-      <div className="text-center">
+      {!isHost && <GuestQuickActions />}
+
+      <div className="flex flex-col items-center gap-2 text-center">
         {currentRound.round_number === players.length && (
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             🏁 Letzte Runde
           </p>
+        )}
+        {activePlayer && (
+          <div className="flex items-center gap-2">
+            <PlayerAvatar
+              name={activePlayer.name}
+              color={activePlayer.color}
+              avatarEmoji={activePlayer.avatar_emoji}
+              size="sm"
+            />
+            <p className="font-heading text-lg font-semibold">
+              {activePlayer.name}&apos;s Bar
+            </p>
+          </div>
         )}
         {currentRound.bar_name && (
           <>
@@ -116,21 +136,17 @@ export function RoundActive() {
         )}
       </div>
 
-      {isHost ? (
-        <HostSipEntry round={currentRound} />
-      ) : (
-        <p className="text-center text-sm text-muted-foreground">
-          Der Gastgeber trägt gerade die Schlucke ein…
-        </p>
-      )}
+      {isHost && <HostSipEntry round={currentRound} />}
 
       <RoundLiveStatus />
+      {!isHost && <RoundBreakdownCard round={currentRound} />}
       {currentRound.minigame_name && (
         <MinigameResultForm round={currentRound} />
       )}
       {isHost && <RuleViolationBox round={currentRound} />}
       {isHost && <PenaltyAdjustmentBox round={currentRound} />}
       {isHost && <ExtraPointsBox round={currentRound} />}
+      {!isHost && <PastRoundsList />}
 
       {isHost && (
         <div className="w-full max-w-md space-y-2">
