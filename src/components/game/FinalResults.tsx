@@ -510,7 +510,10 @@ export function FinalResults() {
 
       <ShareResultsButton
         pagesRef={pagesRef}
-        fileName={`pubgolf-${game?.code ?? "ergebnis"}.pdf`}
+        fileName={`Pubgolf - ${(game?.name || game?.code || "Ergebnis").replace(
+          /[\\/:*?"<>|]/g,
+          ""
+        )}.pdf`}
       />
 
       <Button asChild size="lg" className="w-full text-base gap-2">
