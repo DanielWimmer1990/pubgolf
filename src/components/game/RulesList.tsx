@@ -18,7 +18,7 @@ import { ReportViolationModal } from "@/components/game/ReportViolationModal";
 import { useGame } from "@/hooks/useGame";
 import type { Rule } from "@/types/database";
 
-export function RulesList() {
+export function RulesList({ bare = false }: { bare?: boolean }) {
   const { rules, players, isHost } = useGame();
   const [reportingRule, setReportingRule] = useState<Rule | null>(null);
 
@@ -30,10 +30,17 @@ export function RulesList() {
     <>
       <Drawer>
         <DrawerTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <ScrollText className="h-4 w-4" />
-            Regeln ({rules.length})
-          </Button>
+          {bare ? (
+            <Button size="lg" className="w-full gap-1.5 text-base">
+              <ScrollText className="h-4 w-4" />
+              Regeln ({rules.length})
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <ScrollText className="h-4 w-4" />
+              Regeln ({rules.length})
+            </Button>
+          )}
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>

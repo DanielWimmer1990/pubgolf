@@ -157,53 +157,52 @@ export function RoundSetup() {
           (s) => s.value.toLowerCase() === minigameName.trim().toLowerCase()
         )?.description ?? null;
 
-      // Editing an already-configured round (host went back from active
-      // setup) updates the existing rule instead of inserting a duplicate.
-      if (existingRule) {
-        const { error: ruleError } = await supabase
-          .from("rules")
-          .update({
-            text: ruleText.trim(),
-            violation_points: rulePoints,
-            description: ruleDescription,
-          })
-          .eq("id", existingRule.id);
-        if (ruleError) throw ruleError;
-      } else {
-        const { error: ruleError, data: rule } = await supabase
-          .from("rules")
-          .insert({
-            game_id: currentRound.game_id,
-            round_id: currentRound.id,
-            created_by_player_id: currentRound.active_player_id,
-            text: ruleText.trim(),
-            violation_points: rulePoints,
-            description: ruleDescription,
-          })
-          .select()
-          .single();
-        if (ruleError || !rule) throw ruleError;
-      }
-
       const isFinalRound =
         game!.hide_leaderboard_final_round &&
         currentRound.round_number >= players.length;
 
-      const { error: roundError } = await supabase
-        .from("rounds")
-        .update({
-          bar_name: barName.trim(),
-          drink_description: drinkDescription.trim() || null,
-          par,
-          status: "active",
-          minigame_name: minigameEnabled ? minigameName.trim() || null : null,
-          minigame_points_winner: minigameEnabled ? minigamePointsWinner : null,
-          minigame_points_loser: minigameEnabled ? minigamePointsLoser : null,
-          minigame_description: minigameEnabled ? minigameDescription : null,
-          is_final_round: isFinalRound,
-        })
-        .eq("id", currentRound.id);
-      if (roundError) throw roundError;
+      // Neither write depends on the other's result, so they go out
+      // together instead of waiting on one round-trip before starting
+      // the next — this is most of what made "Runde starten" feel slow.
+      const [ruleResult, roundResult] = await Promise.all([
+        existingRule
+          ? supabase
+              .from("rules")
+              .update({
+                text: ruleText.trim(),
+                violation_points: rulePoints,
+                description: ruleDescription,
+              })
+              .eq("id", existingRule.id)
+          : supabase.from("rules").insert({
+              game_id: currentRound.game_id,
+              round_id: currentRound.id,
+              created_by_player_id: currentRound.active_player_id,
+              text: ruleText.trim(),
+              violation_points: rulePoints,
+              description: ruleDescription,
+            }),
+        supabase
+          .from("rounds")
+          .update({
+            bar_name: barName.trim(),
+            drink_description: drinkDescription.trim() || null,
+            par,
+            status: "active",
+            minigame_name: minigameEnabled ? minigameName.trim() || null : null,
+            minigame_points_winner: minigameEnabled
+              ? minigamePointsWinner
+              : null,
+            minigame_points_loser: minigameEnabled
+              ? minigamePointsLoser
+              : null,
+            minigame_description: minigameEnabled ? minigameDescription : null,
+            is_final_round: isFinalRound,
+          })
+          .eq("id", currentRound.id),
+      ]);
+      if (ruleResult.error) throw ruleResult.error;
+      if (roundResult.error) throw roundResult.error;
 
       // Custom text doesn't join the curated dropdown pool automatically —
       // that would let junk creep into what every player sees. Genuinely

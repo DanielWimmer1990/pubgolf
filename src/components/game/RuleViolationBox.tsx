@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Minus, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PlayerAvatar } from "@/components/game/PlayerAvatar";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -135,38 +136,50 @@ export function RuleViolationBox({ round }: { round: Round }) {
                 )
               </span>
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {players.map((player) => {
                 const count = countFor(rule.id, player.id);
                 return (
-                  <div key={player.id} className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        increment(rule.id, player.id, rule.violation_points)
-                      }
-                      className={cn(
-                        "min-w-0 flex-1 truncate rounded-full border px-3 py-1.5 text-sm hover:border-primary/50 hover:bg-primary/10",
-                        count > 0
-                          ? "border-primary/60 bg-primary/10 text-primary"
-                          : "border-white/15"
-                      )}
-                    >
+                  <button
+                    key={player.id}
+                    type="button"
+                    onClick={() =>
+                      increment(rule.id, player.id, rule.violation_points)
+                    }
+                    className={cn(
+                      "relative flex flex-col items-center gap-1 rounded-lg border p-2 text-xs hover:border-primary/50",
+                      count > 0
+                        ? "border-primary/60 bg-primary/10 text-primary"
+                        : "border-white/15"
+                    )}
+                  >
+                    <PlayerAvatar
+                      name={player.name}
+                      color={player.color}
+                      avatarEmoji={player.avatar_emoji}
+                      size="sm"
+                    />
+                    <span className="truncate max-w-full">
                       {player.name}
                       {count > 0 && ` ×${count}`}
-                    </button>
+                    </span>
                     {count > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => decrement(rule.id, player.id)}
-                        disabled={removingId != null}
+                      <span
+                        role="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          decrement(rule.id, player.id);
+                        }}
                         aria-label={`Einen Eintrag für ${player.name} entfernen`}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground hover:bg-white/10 hover:text-red-400 disabled:opacity-50"
+                        className={cn(
+                          "absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full border border-white/15 bg-background text-muted-foreground hover:text-red-400",
+                          removingId != null && "pointer-events-none opacity-50"
+                        )}
                       >
                         <Minus className="h-3 w-3" />
-                      </button>
+                      </span>
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </div>

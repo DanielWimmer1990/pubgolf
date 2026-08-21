@@ -231,20 +231,28 @@ export default function CreateGamePage() {
     }
     setSavingSettings(true);
     try {
-      const { error: settingsError } = await supabase
-        .from("games")
-        .update({
-          scoring_table: settings.scoringTable,
-          default_drink: settings.defaultDrink.trim() || null,
-          penalty_types: settings.penaltyTypes,
-          show_final_presentation: settings.showFinalPresentation,
-          show_live_leaderboard: settings.showLiveLeaderboard,
-          hide_leaderboard_final_round: settings.hideLeaderboardFinalRound,
-        })
-        .eq("id", gameId);
-      if (settingsError) throw settingsError;
+      // Settings + status can go into one write, run alongside the turn
+      // order shuffle instead of four sequential round-trips — that
+      // latency was most of what made "Spiel starten" feel slow.
+      const [gameResult, shuffledPlayers] = await Promise.all([
+        supabase
+          .from("games")
+          .update({
+            scoring_table: settings.scoringTable,
+            default_drink: settings.defaultDrink.trim() || null,
+            penalty_types: settings.penaltyTypes,
+            show_final_presentation: settings.showFinalPresentation,
+            show_live_leaderboard: settings.showLiveLeaderboard,
+            hide_leaderboard_final_round: settings.hideLeaderboardFinalRound,
+            status: "in_progress",
+            current_round_number: 1,
+            started_at: new Date().toISOString(),
+          })
+          .eq("id", gameId),
+        randomizeTurnOrder(players),
+      ]);
+      if (gameResult.error) throw gameResult.error;
 
-      const shuffledPlayers = await randomizeTurnOrder(players);
       const firstPlayer = shuffledPlayers[0];
       const { error: roundError } = await supabase.from("rounds").insert({
         game_id: gameId,
@@ -253,16 +261,6 @@ export default function CreateGamePage() {
         status: "setup",
       });
       if (roundError) throw roundError;
-
-      const { error: startError } = await supabase
-        .from("games")
-        .update({
-          status: "in_progress",
-          current_round_number: 1,
-          started_at: new Date().toISOString(),
-        })
-        .eq("id", gameId);
-      if (startError) throw startError;
 
       router.push(`/game/${code}`);
     } catch (err) {

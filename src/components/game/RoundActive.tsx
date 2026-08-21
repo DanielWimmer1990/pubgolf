@@ -23,11 +23,13 @@ import { RoundBreakdownCard } from "@/components/game/RoundBreakdownCard";
 import { GuestQuickActions } from "@/components/game/GuestQuickActions";
 import { PastRoundsList } from "@/components/game/PastRoundsList";
 import { PlayerAvatar } from "@/components/game/PlayerAvatar";
+import { Leaderboard } from "@/components/game/Leaderboard";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 
 export function RoundActive() {
   const {
+    game,
     currentRound,
     activePlayer,
     isHost,
@@ -36,11 +38,17 @@ export function RoundActive() {
     minigameResults,
     ruleViolations,
     pointAdjustments,
+    leaderboard,
   } = useGame();
   const [ending, setEnding] = useState(false);
   const [goingBack, setGoingBack] = useState(false);
   const [backConfirmOpen, setBackConfirmOpen] = useState(false);
-  if (!currentRound) return null;
+  if (!currentRound || !game) return null;
+
+  const suspenseActive =
+    game.hide_leaderboard_final_round && currentRound.is_final_round;
+  const canSeeLeaderboard =
+    !suspenseActive && (isHost || game.show_live_leaderboard);
 
   const reportedCount = players.filter((p) =>
     roundDrinks.some(
@@ -100,6 +108,14 @@ export function RoundActive() {
           <ArrowLeft className="h-3.5 w-3.5" />
           {goingBack ? "Öffne…" : "Zurück zur Vorbereitung"}
         </button>
+      )}
+      {!isHost && canSeeLeaderboard && leaderboard.length > 0 && (
+        <div className="w-full max-w-md space-y-2">
+          <p className="text-center text-sm font-medium text-muted-foreground">
+            Aktuelle Rangliste
+          </p>
+          <Leaderboard compact />
+        </div>
       )}
       {!isHost && <GuestQuickActions />}
 

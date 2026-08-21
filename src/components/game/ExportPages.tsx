@@ -150,31 +150,73 @@ export function ExportPages({
       {/* Page 2 — Finale Tabelle */}
       <div data-export-page="standings">
         <PageShell title="Endstand" subtitle={gameName}>
-          <div className="flex h-full flex-col justify-center gap-3">
-            {leaderboard.map(({ player, total }, index) => (
-              <div
-                key={player.id}
-                className={cn(
-                  "flex items-center gap-5 rounded-2xl border border-white/10 bg-white/5 px-6 py-4",
-                  index === 0 && "border-amber-400/60 bg-amber-400/10"
-                )}
-              >
-                <span className="w-12 text-center text-3xl">
-                  {MEDALS[index] ?? index + 1}
-                </span>
-                <PlayerAvatar
-                  name={player.name}
-                  color={player.color}
-                  avatarEmoji={player.avatar_emoji}
-                  size="lg"
-                />
-                <span className="flex-1 truncate text-xl font-semibold">
-                  {player.name}
-                </span>
-                <PointsSpan total={total} />
+          {(() => {
+            // Fixed page height, so row density has to shrink with the
+            // player count instead of overflowing (which just gets
+            // silently clipped top/bottom by the PDF capture).
+            const density =
+              leaderboard.length > 8
+                ? "compact"
+                : leaderboard.length > 5
+                ? "cozy"
+                : "normal";
+            const rowPadding =
+              density === "compact"
+                ? "px-4 py-1.5"
+                : density === "cozy"
+                ? "px-5 py-2.5"
+                : "px-6 py-4";
+            const rowGap =
+              density === "compact"
+                ? "gap-1.5"
+                : density === "cozy"
+                ? "gap-2"
+                : "gap-3";
+            const avatarSize =
+              density === "compact" ? "sm" : density === "cozy" ? "md" : "lg";
+            const nameSize =
+              density === "compact"
+                ? "text-base"
+                : density === "cozy"
+                ? "text-lg"
+                : "text-xl";
+            const medalSize =
+              density === "compact"
+                ? "text-lg"
+                : density === "cozy"
+                ? "text-2xl"
+                : "text-3xl";
+            return (
+              <div className={cn("flex h-full flex-col justify-center", rowGap)}>
+                {leaderboard.map(({ player, total }, index) => (
+                  <div
+                    key={player.id}
+                    className={cn(
+                      "flex items-center gap-5 rounded-2xl border border-white/10 bg-white/5",
+                      rowPadding,
+                      index === 0 && "border-amber-400/60 bg-amber-400/10"
+                    )}
+                  >
+                    <span className={cn("w-12 text-center", medalSize)}>
+                      {MEDALS[index] ?? index + 1}
+                    </span>
+                    <PlayerAvatar
+                      name={player.name}
+                      color={player.color}
+                      avatarEmoji={player.avatar_emoji}
+                      size={avatarSize}
+                    />
+                    <span
+                      className={cn("flex-1 truncate font-semibold", nameSize)}
+                    >
+                      {player.name}
+                    </span>
+                    <PointsSpan total={total} />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </PageShell>
       </div>
 

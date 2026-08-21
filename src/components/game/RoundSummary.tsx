@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,151 +13,12 @@ import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
-type Highlight = { emoji: string; text: string };
-
-function pick(options: string[]): string {
-  return options[Math.floor(Math.random() * options.length)];
-}
-
-function withSign(points: number): string {
-  return `${points > 0 ? "+" : ""}${points}`;
-}
-
-function joinNames(names: string[]): string {
-  if (names.length <= 1) return names[0] ?? "";
-  if (names.length === 2) return `${names[0]} und ${names[1]}`;
-  return `${names.slice(0, -1).join(", ")} und ${names[names.length - 1]}`;
-}
-
-// "Bester Schluck": needed the most extra sips over PAR — a heroic,
-// drawn-out struggle. Strafpunkte (plus), described concretely so it's
-// clear what actually happened, not just an abstract label.
-const BEST_SIP_TEMPLATES = (name: string, points: number) => [
-  `${name} braucht ordentlich Anlauf und kämpft sich durch (${withSign(
-    points
-  )} Strafpunkte)`,
-  `${name} verschluckt sich fast, schafft's aber am Ende (${withSign(
-    points
-  )} Strafpunkte)`,
-  `${name} zieht die Show ordentlich in die Länge (${withSign(
-    points
-  )} Strafpunkte)`,
-];
-
-// "Langsamster Schluck": finished in way fewer sips than rolled — quick
-// and efficient. Gutpunkte (minus).
-const WORST_SIP_TEMPLATES = (name: string, points: number) => [
-  `${name} zieht's in Rekordzeit durch (${withSign(points)} Gutpunkte)`,
-  `${name} macht kurzen Prozess mit dem Glas (${withSign(points)} Gutpunkte)`,
-  `${name} spart sich locker ein paar Schlucke (${withSign(
-    points
-  )} Gutpunkte)`,
-];
-
-const PENALTY_TEMPLATES = (name: string, label: string, points: number) => [
-  `${name} hat's übertrieben: ${label} (${withSign(points)})`,
-  `${name} kassiert eine Runde ${label} (${withSign(points)})`,
-  `${name} baut Mist: ${label} (${withSign(points)})`,
-];
-
-const MINIGAME_TEMPLATES = (name: string, game: string, plural: boolean) =>
-  plural
-    ? [
-        `${name} sind die Meister im "${game}"!`,
-        `${name} räumen bei "${game}" ab!`,
-        `${name} lassen niemandem eine Chance bei "${game}"!`,
-      ]
-    : [
-        `${name} ist der Meister im "${game}"!`,
-        `${name} räumt bei "${game}" ab!`,
-        `${name} lässt niemandem eine Chance bei "${game}"!`,
-      ];
-
 export function RoundSummary() {
-  const {
-    game,
-    currentRound,
-    activePlayer,
-    players,
-    roundDrinks,
-    pointAdjustments,
-    minigameResults,
-    isHost,
-  } = useGame();
+  const { game, currentRound, activePlayer, players, isHost } = useGame();
   const [advancing, setAdvancing] = useState(false);
   const [ending, setEnding] = useState(false);
   const [pickingBonusPlayer, setPickingBonusPlayer] = useState(false);
   const [reopening, setReopening] = useState(false);
-
-  const highlights = useMemo<Highlight[]>(() => {
-    if (!currentRound) return [];
-    const playerById = new Map(players.map((p) => [p.id, p]));
-    const items: Highlight[] = [];
-
-    const scored = roundDrinks.filter(
-      (rd) => rd.round_id === currentRound.id && rd.points != null
-    );
-    if (scored.length > 0) {
-      const best = scored.reduce((a, b) =>
-        (b.points ?? 0) > (a.points ?? 0) ? b : a
-      );
-      const worst = scored.reduce((a, b) =>
-        (b.points ?? 0) < (a.points ?? 0) ? b : a
-      );
-      const bestPlayer = playerById.get(best.player_id);
-      if (bestPlayer) {
-        items.push({
-          emoji: "🏆",
-          text: pick(BEST_SIP_TEMPLATES(bestPlayer.name, best.points ?? 0)),
-        });
-      }
-      if (worst.player_id !== best.player_id) {
-        const worstPlayer = playerById.get(worst.player_id);
-        if (worstPlayer) {
-          items.push({
-            emoji: "🐌",
-            text: pick(
-              WORST_SIP_TEMPLATES(worstPlayer.name, worst.points ?? 0)
-            ),
-          });
-        }
-      }
-    }
-
-    for (const pa of pointAdjustments.filter(
-      (p) => p.round_id === currentRound.id
-    )) {
-      const player = playerById.get(pa.player_id);
-      if (!player) continue;
-      items.push({
-        emoji: "⚠️",
-        text: pick(PENALTY_TEMPLATES(player.name, pa.label, pa.points)),
-      });
-    }
-
-    const winners = minigameResults.filter(
-      (mr) => mr.round_id === currentRound.id && mr.outcome === "winner"
-    );
-    if (winners.length > 0 && currentRound.minigame_name) {
-      const names = winners
-        .map((mr) => playerById.get(mr.player_id)?.name)
-        .filter((n): n is string => !!n);
-      if (names.length > 0) {
-        items.push({
-          emoji: "🎮",
-          text: pick(
-            MINIGAME_TEMPLATES(
-              joinNames(names),
-              currentRound.minigame_name,
-              names.length > 1
-            )
-          ),
-        });
-      }
-    }
-
-    return items;
-  }, [currentRound, players, roundDrinks, pointAdjustments, minigameResults]);
 
   if (!game || !currentRound) return null;
 
@@ -274,25 +135,6 @@ export function RoundSummary() {
           🤫 Die Rangliste bleibt geheim — die Auflösung gibt es im
           Endergebnis, sobald das Spiel beendet ist.
         </p>
-      )}
-
-      {highlights.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">
-            Highlights der Runde
-          </p>
-          <ul className="space-y-1.5">
-            {highlights.map((h, i) => (
-              <li
-                key={i}
-                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm"
-              >
-                <span className="text-base">{h.emoji}</span>
-                <span>{h.text}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
 
       {!isHost && <RoundBreakdownCard round={currentRound} />}

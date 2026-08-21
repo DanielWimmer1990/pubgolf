@@ -21,7 +21,7 @@ import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
 import type { Game } from "@/types/database";
 
-function toSettings(game: Game): GameSettings {
+export function toSettings(game: Game): GameSettings {
   return {
     scoringTable: game.scoring_table,
     defaultDrink: game.default_drink ?? "",
