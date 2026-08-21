@@ -21,6 +21,8 @@ import { supabase } from "@/lib/supabase";
 import { generateUniqueGameCode } from "@/lib/gameCode";
 import { computeDefaultScoringTable } from "@/lib/scoring";
 import { getOrCreateDeviceToken, savePlayerId } from "@/lib/deviceIdentity";
+import { trackRecentGame } from "@/lib/recentGames";
+import { randomizeTurnOrder } from "@/lib/turnOrder";
 import { PLAYER_COLORS } from "@/lib/playerColors";
 import { findIdentityConflict } from "@/lib/playerValidation";
 import { cn } from "@/lib/utils";
@@ -173,6 +175,7 @@ export default function CreateGamePage() {
       if (playerError || !player) throw playerError;
 
       savePlayerId(newCode, player.id);
+      trackRecentGame(newCode, gameName.trim() || null);
       setCode(newCode);
       setGameId(game.id);
       setPlayers([player]);
@@ -241,7 +244,8 @@ export default function CreateGamePage() {
         .eq("id", gameId);
       if (settingsError) throw settingsError;
 
-      const firstPlayer = players[0];
+      const shuffledPlayers = await randomizeTurnOrder(players);
+      const firstPlayer = shuffledPlayers[0];
       const { error: roundError } = await supabase.from("rounds").insert({
         game_id: gameId,
         round_number: 1,

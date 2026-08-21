@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Minus, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,16 @@ export function RuleViolationBox({ round }: { round: Round }) {
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
+
+  // Pending selections are local UI state and don't get cleared just
+  // because the `round` prop changes underneath this mounted component —
+  // without this, an unsaved selection from the previous round kept
+  // showing as "queued" (orange) once the next round started.
+  useEffect(() => {
+    setPending([]);
+    setRemovedIds(new Set());
+    setRemovingId(null);
+  }, [round.id]);
 
   if (rules.length === 0) return null;
 
@@ -125,7 +135,7 @@ export function RuleViolationBox({ round }: { round: Round }) {
                 )
               </span>
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {players.map((player) => {
                 const count = countFor(rule.id, player.id);
                 return (
@@ -136,7 +146,7 @@ export function RuleViolationBox({ round }: { round: Round }) {
                         increment(rule.id, player.id, rule.violation_points)
                       }
                       className={cn(
-                        "rounded-full border px-3 py-1.5 text-sm hover:border-primary/50 hover:bg-primary/10",
+                        "min-w-0 flex-1 truncate rounded-full border px-3 py-1.5 text-sm hover:border-primary/50 hover:bg-primary/10",
                         count > 0
                           ? "border-primary/60 bg-primary/10 text-primary"
                           : "border-white/15"

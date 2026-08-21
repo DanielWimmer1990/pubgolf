@@ -12,6 +12,7 @@ import { HostAddPlayerForm } from "@/components/game/HostAddPlayerForm";
 import { EditPlayerDialog } from "@/components/game/EditPlayerDialog";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/lib/supabase";
+import { randomizeTurnOrder } from "@/lib/turnOrder";
 import { cn } from "@/lib/utils";
 import type { Player } from "@/types/database";
 
@@ -31,7 +32,8 @@ export function Lobby() {
     }
     setStarting(true);
     try {
-      const firstPlayer = players[0];
+      const shuffledPlayers = await randomizeTurnOrder(players);
+      const firstPlayer = shuffledPlayers[0];
       const { data: round, error: roundError } = await supabase
         .from("rounds")
         .insert({

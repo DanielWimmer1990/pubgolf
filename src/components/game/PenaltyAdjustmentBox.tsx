@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,15 @@ export function PenaltyAdjustmentBox({ round }: { round: Round }) {
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
+
+  // See RuleViolationBox — pending selections are local UI state and
+  // don't get cleared just because `round` changes underneath this
+  // mounted component.
+  useEffect(() => {
+    setPending([]);
+    setRemovedIds(new Set());
+    setRemovingId(null);
+  }, [round.id]);
 
   if (!game || game.penalty_types.length === 0) return null;
 
