@@ -389,6 +389,22 @@ export function GameProvider({
     };
   }, [state, code]);
 
+  // A ?host=<token> link that matches the game's host_invite_token
+  // promotes whoever opens it (once they're a joined player) to
+  // co-host — lets more than one person run the game.
+  useEffect(() => {
+    if (!value.game || !value.myPlayer || value.myPlayer.is_host) return;
+    const hostToken = new URLSearchParams(window.location.search).get("host");
+    if (!hostToken || hostToken !== value.game.host_invite_token) return;
+    supabase
+      .from("players")
+      .update({ is_host: true })
+      .eq("id", value.myPlayer.id)
+      .then(({ error }) => {
+        if (error) console.error(error);
+      });
+  }, [value.game, value.myPlayer]);
+
   return (
     <GameContext.Provider value={value}>{children}</GameContext.Provider>
   );

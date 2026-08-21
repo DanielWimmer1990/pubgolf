@@ -37,6 +37,7 @@ export type Game = {
   show_live_leaderboard: boolean;
   hide_leaderboard_final_round: boolean;
   penalty_types: PenaltyType[];
+  host_invite_token: string;
 };
 
 export type Player = {

@@ -32,7 +32,10 @@ create table games (
                                        {"id": "water_hazard", "name": "Water Hazard (Klogang)", "points": 10, "icon": "🚽"},
                                        {"id": "spill", "name": "Getränk umschütten", "points": 5, "icon": "💧"},
                                        {"id": "vomit", "name": "Kotzen", "points": 20, "icon": "🤮"}
-                                     ]'::jsonb
+                                     ]'::jsonb,
+  -- Sharing a link with this token lets whoever opens it become an
+  -- additional host — same trust model as the join code itself.
+  host_invite_token                 uuid default uuid_generate_v4()
 );
 
 -- ── PLAYERS ────────────────────────────────────────────────────────────────
